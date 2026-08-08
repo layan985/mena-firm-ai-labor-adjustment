@@ -1,0 +1,28 @@
+name: release-v0.1.1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/release-v0.1.1.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create v0.1.1 release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view v0.1.1 >/dev/null 2>&1; then
+            echo 'v0.1.1 already exists; nothing to do.'
+            exit 0
+          fi
+          gh release create v0.1.1 \
+            --target "$GITHUB_SHA" \
+            --title 'v0.1.1 — Public research scaffold and audit seed' \
+            --notes 'Public research-engineering release for MENA Firm-Level AI Adoption and Labor-Market Adjustment. Includes reproducible Python/R/SQL/LaTeX architecture, CI, pre-analysis and identification documentation, synthetic fixtures, and the first verified public firm-year audit seed. This release does not claim completed causal estimates and does not redistribute restricted WBES microdata.'
