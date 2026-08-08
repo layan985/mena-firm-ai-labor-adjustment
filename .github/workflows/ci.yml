@@ -1,0 +1,44 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: pip install -r requirements.lock
+      - run: pip install -e .
+      - run: pytest
+      - run: python scripts/run_python_pipeline.py --input data/synthetic/wbes_fixture.csv --output /tmp/wbes_fixture_processed.csv
+
+  r-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+      - name: Parse every R analysis script
+        shell: Rscript {0}
+        run: |
+          files <- list.files("analysis", pattern = "\\.R$", full.names = TRUE)
+          invisible(lapply(files, function(f) parse(file = f)))
+          cat("Parsed", length(files), "R scripts successfully\n")
+
+  latex-paper:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: xu-cheng/latex-action@v3
+        with:
+          root_file: main.tex
+          working_directory: paper

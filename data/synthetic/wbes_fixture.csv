@@ -1,0 +1,7 @@
+firm_id,country,year,innovation_text,l1,l2,l3a,l3b,l4a1,l4b,l5,l6,l10
+A1,JOR,2024,"Implemented machine learning demand forecasting for inventory and pricing",35,28,20,15,8,12,10,2,1
+A2,JOR,2024,"Opened a new branch and redesigned packaging",20,19,12,8,4,8,5,1,2
+A3,TUN,2024,"Introduced AI chatbot for customer support and automated ticket routing",48,52,15,33,7,8,21,6,1
+A4,EGY,2025,"Added a smart display to the retail floor",11,10,0,11,0,0,4,0,2
+A5,SAU,2023,"Deployed computer vision inspection on the production line",120,105,95,25,50,45,18,9,1
+A6,MAR,2023,"Migrated bookkeeping to cloud software",17,16,0,17,0,0,8,0,1

@@ -1,0 +1,23 @@
+project:
+  name: mena-firm-ai-labor-adjustment
+  version: 0.1.1
+  first_panel_year: 2018
+  last_panel_year: 2025
+  adoption_threshold: 2
+  chatgpt_release_date: 2022-11-30
+
+markets:
+  - SAU
+  - ARE
+  - QAT
+  - KWT
+  - EGY
+  - JOR
+  - MAR
+  - TUN
+
+paths:
+  raw: data/raw
+  interim: data/interim
+  processed: data/processed
+  outputs: outputs

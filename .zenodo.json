@@ -1,0 +1,9 @@
+{
+  "title": "MENA Firm-Level AI Adoption and Labor-Market Adjustment",
+  "upload_type": "software",
+  "description": "Reproducible research pipeline for measuring firm-level AI adoption and labor-market adjustment in MENA.",
+  "creators": [{"name": "Oraidi, Layan"}],
+  "license": "MIT",
+  "keywords": ["artificial intelligence", "labor economics", "MENA", "difference-in-differences", "event study", "NLP"],
+  "version": "0.1.1"
+}

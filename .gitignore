@@ -1,0 +1,34 @@
+# Raw / restricted data
+data/raw/**
+!data/raw/.gitkeep
+data/interim/**
+!data/interim/.gitkeep
+data/processed/**
+!data/processed/.gitkeep
+
+# Generated research outputs
+outputs/**
+!outputs/.gitkeep
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.log
+paper/*.out
+paper/*.pdf
+
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# R
+.Rhistory
+.RData
+renv/library/
+renv/staging/
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/

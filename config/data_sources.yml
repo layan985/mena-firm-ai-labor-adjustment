@@ -1,0 +1,30 @@
+sources:
+  wbes:
+    name: World Bank Enterprise Surveys
+    url: https://microdata.worldbank.org/collections/enterprise_surveys
+    access: free registration; check dataset-specific terms
+    role: measurement validation and firm labor outcomes
+  wbes_tunisia_panel:
+    name: Tunisia WBES 2013-2020-2024 panel
+    url: https://microdata.worldbank.org/catalog/8157
+    access: World Bank Microdata Library
+    role: panel benchmark and variable harmonization
+  mena_ai_measurement_paper:
+    name: AI Adoption in MENAAP - Evidence from Enterprise Surveys
+    url: https://thedocs.worldbank.org/en/doc/c749b541398f6b28ab8a64250b52e5fa-0280032026/original/udomsaph-AIAdoption-20260120.pdf
+    role: methodological benchmark, not raw data
+  saudi_exchange:
+    name: Saudi Exchange / issuer reports and disclosures
+    url: https://www.saudiexchange.sa/
+    access: public website; verify automated-access terms before scaling
+    role: annual-report panel
+  dfm:
+    name: Dubai Financial Market disclosures / download centre
+    url: https://www.dfm.ae/
+    access: public website; verify automated-access terms before scaling
+    role: annual-report panel
+  qse:
+    name: Qatar Stock Exchange
+    url: https://qe.com.qa/
+    access: public website; verify automated-access terms before scaling
+    role: annual-report panel

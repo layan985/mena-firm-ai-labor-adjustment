@@ -1,0 +1,17 @@
+{
+  "R": {
+    "Version": "4.5.1",
+    "Repositories": [
+      {"Name": "CRAN", "URL": "https://cloud.r-project.org"}
+    ]
+  },
+  "Packages": {
+    "renv": {"Package": "renv", "Version": "1.1.5", "Source": "Repository", "Repository": "CRAN"},
+    "fixest": {"Package": "fixest", "Version": "0.14.2", "Source": "Repository", "Repository": "CRAN"},
+    "did": {"Package": "did", "Version": "2.5.1", "Source": "Repository", "Repository": "CRAN"},
+    "modelsummary": {"Package": "modelsummary", "Version": "2.5.0", "Source": "Repository", "Repository": "CRAN"},
+    "data.table": {"Package": "data.table", "Version": "1.18.2.1", "Source": "Repository", "Repository": "CRAN"},
+    "arrow": {"Package": "arrow", "Version": "25.0.0", "Source": "Repository", "Repository": "CRAN"},
+    "ggplot2": {"Package": "ggplot2", "Version": "4.0.3", "Source": "Repository", "Repository": "CRAN"}
+  }
+}

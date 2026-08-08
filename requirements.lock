@@ -1,0 +1,8 @@
+# Direct runtime/dev lock for the Python side of the project.
+# Regenerate with a connected package index before a public tagged release.
+numpy==2.5.1
+pandas==3.0.5
+duckdb==1.5.5
+pyarrow==25.0.0
+PyYAML==6.0.3
+pytest==9.0.2

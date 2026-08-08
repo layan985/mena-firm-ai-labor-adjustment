@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this software or derived public data release, please cite it."
+title: "MENA Firm-Level AI Adoption and Labor-Market Adjustment"
+type: software
+authors:
+  - family-names: "Oraidi"
+    given-names: "Layan"
+version: 0.1.1
+date-released: 2026-08-08
+license: MIT
+repository-code: "https://github.com/layan985/mena-firm-ai-labor-adjustment"
+keywords:
+  - artificial intelligence
+  - labor economics
+  - MENA
+  - difference-in-differences
+  - event study
+  - NLP
