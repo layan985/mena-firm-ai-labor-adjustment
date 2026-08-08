@@ -4,19 +4,23 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mena-ai-labor"
-version = "0.1.1"
-description = "Firm-level AI adoption and labor-market adjustment research pipeline for MENA"
-requires-python = ">=3.12"
+version = "0.2.0"
+description = "MENA firm AI adoption, occupational exposure, narratives, and labor-market adjustment research pipeline"
+requires-python = ">=3.11"
 dependencies = [
-  "numpy==2.5.1",
-  "pandas==3.0.5",
-  "duckdb==1.5.5",
-  "pyarrow==25.0.0",
-  "PyYAML==6.0.3"
+  "numpy>=2.0",
+  "pandas>=2.2",
+  "duckdb>=1.1",
+  "pyarrow>=17",
+  "polars>=1.0",
+  "PyYAML>=6.0",
+  "requests>=2.32",
+  "openpyxl>=3.1",
+  "matplotlib>=3.9"
 ]
 
 [project.optional-dependencies]
-dev = ["pytest==9.0.2"]
+dev = ["pytest>=8", "ruff>=0.6"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
