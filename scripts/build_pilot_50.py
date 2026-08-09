@@ -14,9 +14,9 @@ def build() -> pd.DataFrame:
     panel = firms.assign(_k=1).merge(years.assign(_k=1), on="_k").drop(columns="_k")
     panel = panel[["firm_id", "firm_name", "country", "exchange", "ticker", "sector", "year"]]
     for col in [
-        "employees", "employment_source_id", "employment_source_page",
-        "employment_source_sha256", "reporting_scope", "ai_label",
-        "ai_source_id", "ai_source_page", "ai_source_sha256", "ai_evidence_id",
+        "employees", "employment_missing_reason", "employment_source_id", "employment_source_page",
+        "employment_source_sha256", "reporting_scope", "ai_label", "ai_search_complete",
+        "ai_missing_reason", "ai_source_id", "ai_source_page", "ai_source_sha256", "ai_evidence_id",
         "source_retrieval_date", "scope_break_flag", "scope_break_reason"
     ]:
         panel[col] = pd.NA
