@@ -25,6 +25,7 @@ jobs:
         run: |
           python scripts/build_pilot_coverage.py
           cat data/interim/pilot_50_coverage_summary.json
+          python scripts/report_pilot_conflicts.py
 
   r-syntax:
     runs-on: ubuntu-latest
