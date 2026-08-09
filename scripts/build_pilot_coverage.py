@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import csv
 import json
 import pandas as pd
 
@@ -17,11 +18,33 @@ def _truthy(value: object) -> bool:
     return str(value).strip().lower() in {"1", "true", "yes", "y"}
 
 
+def _research_batch_paths() -> list[Path]:
+    patterns = ("research_batch_*_employment.csv", "research_batch_*_ai_evidence.csv")
+    return sorted({path for pattern in patterns for path in PILOT_DIR.glob(pattern)})
+
+
+def _validate_csv_shapes() -> None:
+    errors: list[str] = []
+    for path in _research_batch_paths():
+        with path.open("r", encoding="utf-8-sig", newline="") as handle:
+            rows = csv.reader(handle)
+            try:
+                header = next(rows)
+            except StopIteration:
+                errors.append(f"{path.relative_to(ROOT)}: empty CSV")
+                continue
+            expected = len(header)
+            for line_no, row in enumerate(rows, start=2):
+                if len(row) != expected:
+                    errors.append(
+                        f"{path.relative_to(ROOT)} line {line_no}: expected {expected} fields, found {len(row)}"
+                    )
+    if errors:
+        raise ValueError("Malformed research batch CSVs:\n- " + "\n- ".join(errors))
+
+
 def _read_batch(path: Path) -> pd.DataFrame:
-    try:
-        return pd.read_csv(path)
-    except pd.errors.ParserError as exc:
-        raise ValueError(f"Malformed research batch CSV: {path.relative_to(ROOT)}: {exc}") from exc
+    return pd.read_csv(path)
 
 
 def _load_employment_batches() -> pd.DataFrame:
@@ -99,7 +122,8 @@ def _classify_group(group: pd.DataFrame) -> pd.Series:
     })
 
 
-def build() -> tuple[pd.DataFrame, dict[str, int]]:
+def build() -> tuple[pd.DataFrame, dict]:
+    _validate_csv_shapes()
     frame = pd.read_csv(FRAME)
     years = pd.DataFrame({"year": range(2018, 2026)})
     grid = frame.assign(_key=1).merge(years.assign(_key=1), on="_key").drop(columns="_key")
@@ -122,24 +146,38 @@ def build() -> tuple[pd.DataFrame, dict[str, int]]:
     ai = _load_ai_batches()
     ai_summary = (
         ai.groupby(["firm_id", "year"], dropna=False)
-        .agg(ai_evidence_records=("source_batch", "size"), ai_source_batches=("source_batch", lambda x: "|".join(sorted(set(map(str, x))))))
+        .agg(
+            ai_evidence_records=("source_batch", "size"),
+            ai_source_batches=("source_batch", lambda x: "|".join(sorted(set(map(str, x))))),
+        )
         .reset_index()
         if not ai.empty
         else pd.DataFrame(columns=["firm_id", "year", "ai_evidence_records", "ai_source_batches"])
     )
 
-    coverage = grid.merge(emp_summary, on=["firm_id", "year"], how="left").merge(ai_summary, on=["firm_id", "year"], how="left")
+    coverage = grid.merge(emp_summary, on=["firm_id", "year"], how="left").merge(
+        ai_summary, on=["firm_id", "year"], how="left"
+    )
     coverage["employment_status"] = coverage["employment_status"].fillna("unresolved")
     coverage["ai_evidence_records"] = coverage["ai_evidence_records"].fillna(0).astype(int)
     coverage["hash_pending"] = coverage["hash_pending"].fillna(True).astype(bool)
     coverage["scope_break"] = coverage["scope_break"].fillna(False).astype(bool)
 
     numeric_statuses = {"exact", "rounded", "exact_scope_break"}
+    numeric_mask = coverage["employment_status"].isin(numeric_statuses)
+    per_firm = (
+        coverage.assign(has_numeric=numeric_mask.astype(int))
+        .groupby(["firm_id", "firm_name"], as_index=False)
+        .agg(numeric_years=("has_numeric", "sum"), unresolved_years=("employment_status", lambda s: int((s == "unresolved").sum())))
+    )
+    zero_numeric_firms = per_firm.loc[per_firm["numeric_years"].eq(0), "firm_id"].tolist()
+    partial_firms = per_firm.loc[per_firm["numeric_years"].between(1, 7), ["firm_id", "numeric_years"]]
+
     summary = {
         "target_firms": 50,
         "target_firm_years": 400,
-        "employment_firm_years_with_numeric_value": int(coverage["employment_status"].isin(numeric_statuses).sum()),
-        "firms_with_any_numeric_employment": int(coverage.loc[coverage["employment_status"].isin(numeric_statuses), "firm_id"].nunique()),
+        "employment_firm_years_with_numeric_value": int(numeric_mask.sum()),
+        "firms_with_any_numeric_employment": int(coverage.loc[numeric_mask, "firm_id"].nunique()),
         "employment_exact_firm_years": int((coverage["employment_status"] == "exact").sum()),
         "employment_rounded_firm_years": int((coverage["employment_status"] == "rounded").sum()),
         "employment_scope_break_firm_years": int((coverage["employment_status"] == "exact_scope_break").sum()),
@@ -147,15 +185,17 @@ def build() -> tuple[pd.DataFrame, dict[str, int]]:
         "employment_unresolved_firm_years": int((coverage["employment_status"] == "unresolved").sum()),
         "ai_evidence_firm_years": int((coverage["ai_evidence_records"] > 0).sum()),
         "firms_with_ai_evidence": int(coverage.loc[coverage["ai_evidence_records"] > 0, "firm_id"].nunique()),
-        "numeric_employment_rows_with_hash_pending": int((coverage["employment_status"].isin(numeric_statuses) & coverage["hash_pending"]).sum()),
+        "numeric_employment_rows_with_hash_pending": int((numeric_mask & coverage["hash_pending"]).sum()),
+        "firms_with_zero_numeric_employment": zero_numeric_firms,
+        "partial_firm_coverage": {row.firm_id: int(row.numeric_years) for row in partial_firms.itertuples(index=False)},
     }
 
     OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
     coverage.to_csv(OUT_CSV, index=False)
-    OUT_JSON.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+    OUT_JSON.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return coverage, summary
 
 
 if __name__ == "__main__":
     _, summary = build()
-    print(json.dumps(summary, indent=2))
+    print(json.dumps(summary, indent=2, sort_keys=True))
