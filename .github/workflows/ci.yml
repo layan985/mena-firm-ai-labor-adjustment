@@ -21,6 +21,10 @@ jobs:
       - run: pip install -e .
       - run: pytest
       - run: python scripts/run_python_pipeline.py --input data/synthetic/wbes_fixture.csv --output /tmp/wbes_fixture_processed.csv
+      - name: Build 50-firm coverage audit
+        run: |
+          python scripts/build_pilot_coverage.py
+          cat data/interim/pilot_50_coverage_summary.json
 
   r-syntax:
     runs-on: ubuntu-latest
