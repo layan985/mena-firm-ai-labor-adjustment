@@ -1,7 +1,7 @@
 PYTHON ?= python
 R ?= Rscript
 
-.PHONY: setup-python test synthetic pipeline validate-data r-analysis paper clean
+.PHONY: setup-python test synthetic pipeline validate-data archive-pilot-sources validate-source-manifest prepare-ai-validation r-analysis paper clean
 
 setup-python:
 	$(PYTHON) -m venv .venv
@@ -18,6 +18,16 @@ pipeline:
 
 validate-data:
 	PYTHONPATH=src $(PYTHON) scripts/validate_data.py
+
+archive-pilot-sources:
+	PYTHONPATH=src $(PYTHON) scripts/archive_pilot_sources.py --scope all --apply
+
+validate-source-manifest:
+	PYTHONPATH=src $(PYTHON) scripts/validate_source_manifest.py --verify-files
+
+prepare-ai-validation:
+	PYTHONPATH=src $(PYTHON) scripts/build_ai_validation_input.py
+	PYTHONPATH=src $(PYTHON) scripts/draw_blinded_validation_sample.py
 
 r-analysis:
 	$(R) analysis/01_descriptives.R

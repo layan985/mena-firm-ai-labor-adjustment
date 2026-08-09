@@ -1,3 +1,5 @@
+import math
+
 import pandas as pd
 import pytest
 
@@ -20,6 +22,7 @@ def test_blinded_sample_has_no_identity_or_first_label():
     assert "employees" not in out.columns
     assert "ai_label" not in out.columns
     assert set(out.columns) == {"validation_id", "evidence_excerpt", "year", "coder_label", "coder_confidence", "coder_notes"}
+    assert len(out) >= math.ceil(len(df) * 0.20)
 
 
 def test_agreement_perfect_labels():

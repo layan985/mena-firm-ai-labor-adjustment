@@ -160,8 +160,8 @@ def build() -> tuple[pd.DataFrame, dict]:
     )
     coverage["employment_status"] = coverage["employment_status"].fillna("unresolved")
     coverage["ai_evidence_records"] = coverage["ai_evidence_records"].fillna(0).astype(int)
-    coverage["hash_pending"] = coverage["hash_pending"].fillna(True).astype(bool)
-    coverage["scope_break"] = coverage["scope_break"].fillna(False).astype(bool)
+    coverage["hash_pending"] = coverage["hash_pending"].astype("boolean").fillna(True).astype(bool)
+    coverage["scope_break"] = coverage["scope_break"].astype("boolean").fillna(False).astype(bool)
 
     numeric_statuses = {"exact", "rounded", "exact_scope_break"}
     numeric_mask = coverage["employment_status"].isin(numeric_statuses)
@@ -186,6 +186,7 @@ def build() -> tuple[pd.DataFrame, dict]:
         "ai_evidence_firm_years": int((coverage["ai_evidence_records"] > 0).sum()),
         "firms_with_ai_evidence": int(coverage.loc[coverage["ai_evidence_records"] > 0, "firm_id"].nunique()),
         "numeric_employment_rows_with_hash_pending": int((numeric_mask & coverage["hash_pending"]).sum()),
+        "numeric_employment_rows_hash_complete": int((numeric_mask & ~coverage["hash_pending"]).sum()),
         "firms_with_zero_numeric_employment": zero_numeric_firms,
         "partial_firm_coverage": {row.firm_id: int(row.numeric_years) for row in partial_firms.itertuples(index=False)},
     }

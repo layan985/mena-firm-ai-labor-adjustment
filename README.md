@@ -2,9 +2,9 @@
 
 > A research-grade, end-to-end empirical repository for measuring substantive AI adoption at the firm level and estimating labor-market adjustment in the Middle East and North Africa.
 
-**Status:** research scaffold / data-acquisition stage. The repository is designed so raw licensed or registration-gated files are never committed. Synthetic fixtures are included for CI and pipeline testing.
+**Status (machine-audited 9 Aug 2026):** active 50-firm pilot collection; not frozen and not ready for estimation. The repository is designed so raw licensed or registration-gated files are never committed. Synthetic fixtures are included for CI and pipeline testing.
 
-**Real-data audit seed:** the repo now includes nine verified public firm-year workforce rows across Aramco, stc, and Almarai plus seven manually reviewed AI-evidence records. These are explicitly non-inferential and exist to test provenance, treatment timing, reporting-scope consistency, and structural-break flags before the 50-firm pilot is scaled.
+**Live pilot audit:** the canonical 50 × 2018–2025 grid contains 116/400 firm-years with numeric employment evidence (92 exact, 9 explicitly rounded, and 15 carrying scope-break warnings), leaving 284 unresolved. Numeric evidence covers 26/50 firms. AI evidence covers 62 firm-years and 31/50 firms. Exact source bytes and SHA-256 bindings are complete for 105/116 numeric employment observations; the remaining 11 are documented issuer access failures. These observations are non-inferential until collection, independent blinded coding, agreement analysis, and freeze gates are complete.
 
 ## Why this project exists
 

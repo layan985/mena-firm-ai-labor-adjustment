@@ -54,3 +54,9 @@ For each passage they record:
 - optional `coder_notes`.
 
 Agreement must be computed before disagreements are adjudicated.
+
+Run `make prepare-ai-validation` to reconcile repeated batch records, refuse
+evidence IDs reused for different passages, draw a ceiling-based stratified
+sample of at least 20%, and create separate blinded and first-coder files. Give
+the independent coder only `blinded_ai_validation_sample.csv`; do not share the
+first-coder key until pre-adjudication agreement has been calculated.
