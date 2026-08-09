@@ -1,5 +1,8 @@
 # MENA Firm-Level AI Adoption and Labor-Market Adjustment
 
+> **Portfolio case study:** [Contribution, public proof, claim boundaries and the next external-validation gate](docs/PORTFOLIO_CASE_STUDY.md).
+
+
 > A research-grade, end-to-end empirical repository for measuring substantive AI adoption at the firm level and estimating labor-market adjustment in the Middle East and North Africa.
 
 **Status:** research scaffold / data-acquisition stage. The repository is designed so raw licensed or registration-gated files are never committed. Synthetic fixtures are included for CI and pipeline testing.
