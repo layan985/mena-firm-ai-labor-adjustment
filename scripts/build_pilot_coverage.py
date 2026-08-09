@@ -17,10 +17,17 @@ def _truthy(value: object) -> bool:
     return str(value).strip().lower() in {"1", "true", "yes", "y"}
 
 
+def _read_batch(path: Path) -> pd.DataFrame:
+    try:
+        return pd.read_csv(path)
+    except pd.errors.ParserError as exc:
+        raise ValueError(f"Malformed research batch CSV: {path.relative_to(ROOT)}: {exc}") from exc
+
+
 def _load_employment_batches() -> pd.DataFrame:
     frames: list[pd.DataFrame] = []
     for path in sorted(PILOT_DIR.glob("research_batch_*_employment.csv")):
-        df = pd.read_csv(path)
+        df = _read_batch(path)
         if not {"firm_id", "year", "employees"}.issubset(df.columns):
             continue
         df = df.copy()
@@ -37,7 +44,7 @@ def _load_employment_batches() -> pd.DataFrame:
 def _load_ai_batches() -> pd.DataFrame:
     frames: list[pd.DataFrame] = []
     for path in sorted(PILOT_DIR.glob("research_batch_*_ai_evidence.csv")):
-        df = pd.read_csv(path)
+        df = _read_batch(path)
         if not {"firm_id", "year"}.issubset(df.columns):
             continue
         df = df.copy()
@@ -71,96 +78,84 @@ def _classify_group(group: pd.DataFrame) -> pd.Series:
 
     if len(values) > 1:
         status = "conflict"
-        chosen = pd.NA
+        employee_value = pd.NA
     elif rounded:
         status = "rounded"
-        chosen = values[0]
+        employee_value = values[0]
     elif scope_break:
         status = "exact_scope_break"
-        chosen = values[0]
+        employee_value = values[0]
     else:
         status = "exact"
-        chosen = values[0]
+        employee_value = values[0]
 
     return pd.Series({
         "employment_status": status,
-        "employees": chosen,
+        "employees": employee_value,
         "employment_record_count": int(len(group)),
         "employment_source_batches": "|".join(batches),
-        "scope_break": bool(scope_break),
+        "scope_break": scope_break,
         "hash_pending": bool(hash_pending),
     })
 
 
-def build() -> tuple[pd.DataFrame, dict]:
-    firms = pd.read_csv(FRAME, dtype={"ticker": "string"})
-    if len(firms) != 50 or firms["firm_id"].nunique() != 50:
-        raise ValueError("Pilot frame must contain exactly 50 unique firms")
-
+def build() -> tuple[pd.DataFrame, dict[str, int]]:
+    frame = pd.read_csv(FRAME)
     years = pd.DataFrame({"year": range(2018, 2026)})
-    grid = firms.assign(_k=1).merge(years.assign(_k=1), on="_k").drop(columns="_k")
-    grid = grid[["firm_id", "firm_name", "country", "exchange", "sector", "year"]]
-    if len(grid) != 400:
-        raise AssertionError("Expected 400 target firm-years")
+    grid = frame.assign(_key=1).merge(years.assign(_key=1), on="_key").drop(columns="_key")
 
-    emp = _load_employment_batches()
-    if emp.empty:
-        emp_cov = pd.DataFrame(columns=["firm_id", "year", "employment_status", "employees"])
+    if len(frame) != 50 or frame["firm_id"].nunique() != 50:
+        raise ValueError("Pilot frame must contain exactly 50 unique firms")
+    if len(grid) != 400:
+        raise ValueError("Pilot grid must contain exactly 400 firm-years")
+
+    employment = _load_employment_batches()
+    if employment.empty:
+        emp_summary = pd.DataFrame(columns=["firm_id", "year", "employment_status", "employees"])
     else:
-        emp_cov = (
-            emp.groupby(["firm_id", "year"], dropna=False, sort=False)
+        emp_summary = (
+            employment.groupby(["firm_id", "year"], dropna=False)
             .apply(_classify_group, include_groups=False)
             .reset_index()
         )
 
     ai = _load_ai_batches()
-    if ai.empty:
-        ai_cov = pd.DataFrame(columns=["firm_id", "year", "ai_evidence_count", "max_ai_score"])
-    else:
-        if "ai_score" in ai.columns:
-            ai["ai_score"] = pd.to_numeric(ai["ai_score"], errors="coerce")
-        else:
-            ai["ai_score"] = pd.NA
-        ai_cov = (
-            ai.groupby(["firm_id", "year"], dropna=False)
-            .agg(ai_evidence_count=("source_batch", "size"), max_ai_score=("ai_score", "max"))
-            .reset_index()
-        )
-
-    coverage = grid.merge(emp_cov, on=["firm_id", "year"], how="left").merge(
-        ai_cov, on=["firm_id", "year"], how="left"
+    ai_summary = (
+        ai.groupby(["firm_id", "year"], dropna=False)
+        .agg(ai_evidence_records=("source_batch", "size"), ai_source_batches=("source_batch", lambda x: "|".join(sorted(set(map(str, x))))))
+        .reset_index()
+        if not ai.empty
+        else pd.DataFrame(columns=["firm_id", "year", "ai_evidence_records", "ai_source_batches"])
     )
-    coverage["employment_status"] = coverage["employment_status"].fillna("unresolved")
-    coverage["employment_record_count"] = coverage["employment_record_count"].fillna(0).astype(int)
-    coverage["ai_evidence_count"] = coverage["ai_evidence_count"].fillna(0).astype(int)
-    coverage["scope_break"] = coverage["scope_break"].fillna(False).astype(bool)
-    coverage["hash_pending"] = coverage["hash_pending"].fillna(True).astype(bool)
 
-    status_counts = coverage["employment_status"].value_counts().to_dict()
-    firms_with_any_employment = int(coverage.loc[coverage["employees"].notna(), "firm_id"].nunique())
-    firms_with_ai_evidence = int(coverage.loc[coverage["ai_evidence_count"].gt(0), "firm_id"].nunique())
+    coverage = grid.merge(emp_summary, on=["firm_id", "year"], how="left").merge(ai_summary, on=["firm_id", "year"], how="left")
+    coverage["employment_status"] = coverage["employment_status"].fillna("unresolved")
+    coverage["ai_evidence_records"] = coverage["ai_evidence_records"].fillna(0).astype(int)
+    coverage["hash_pending"] = coverage["hash_pending"].fillna(True).astype(bool)
+    coverage["scope_break"] = coverage["scope_break"].fillna(False).astype(bool)
+
+    numeric_statuses = {"exact", "rounded", "exact_scope_break"}
     summary = {
         "target_firms": 50,
         "target_firm_years": 400,
-        "employment_status_counts": {str(k): int(v) for k, v in status_counts.items()},
-        "numeric_employment_firm_years": int(coverage["employees"].notna().sum()),
-        "firms_with_any_numeric_employment": firms_with_any_employment,
-        "firm_years_with_ai_evidence": int(coverage["ai_evidence_count"].gt(0).sum()),
-        "firms_with_ai_evidence": firms_with_ai_evidence,
-        "scope_break_firm_years": int(coverage["scope_break"].sum()),
-        "employment_rows_with_hash_pending": int(
-            coverage["employees"].notna().mul(coverage["hash_pending"]).sum()
-        ),
-        "unresolved_firm_years": int(coverage["employment_status"].eq("unresolved").sum()),
-        "conflicting_firm_years": int(coverage["employment_status"].eq("conflict").sum()),
+        "employment_firm_years_with_numeric_value": int(coverage["employment_status"].isin(numeric_statuses).sum()),
+        "firms_with_any_numeric_employment": int(coverage.loc[coverage["employment_status"].isin(numeric_statuses), "firm_id"].nunique()),
+        "employment_exact_firm_years": int((coverage["employment_status"] == "exact").sum()),
+        "employment_rounded_firm_years": int((coverage["employment_status"] == "rounded").sum()),
+        "employment_scope_break_firm_years": int((coverage["employment_status"] == "exact_scope_break").sum()),
+        "employment_conflict_firm_years": int((coverage["employment_status"] == "conflict").sum()),
+        "employment_unresolved_firm_years": int((coverage["employment_status"] == "unresolved").sum()),
+        "ai_evidence_firm_years": int((coverage["ai_evidence_records"] > 0).sum()),
+        "firms_with_ai_evidence": int(coverage.loc[coverage["ai_evidence_records"] > 0, "firm_id"].nunique()),
+        "numeric_employment_rows_with_hash_pending": int((coverage["employment_status"].isin(numeric_statuses) & coverage["hash_pending"]).sum()),
     }
 
     OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
-    coverage.sort_values(["firm_id", "year"]).to_csv(OUT_CSV, index=False)
-    OUT_JSON.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
+    coverage.to_csv(OUT_CSV, index=False)
+    OUT_JSON.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     return coverage, summary
 
 
 if __name__ == "__main__":
     _, summary = build()
-    print(json.dumps(summary, indent=2, sort_keys=True))
+    print(json.dumps(summary, indent=2))
