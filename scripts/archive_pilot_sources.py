@@ -10,6 +10,7 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timezone
+from http.client import IncompleteRead
 from pathlib import Path
 from typing import Iterable
 from urllib.error import HTTPError, URLError
@@ -153,8 +154,6 @@ def archive_url(url: str, archive_dir: Path, timeout: float, max_bytes: int) -> 
             _validate_payload(bytes(prefix), size, mime_type)
             sha256 = digest.hexdigest()
             extension = _extension(bytes(prefix), mime_type, response.geturl())
-            # Include the content hash so a refresh of a dynamic HTML endpoint
-            # preserves the earlier exact bytes instead of overwriting them.
             destination = archive_dir / _archive_name(url, extension, sha256)
             os.replace(temp_path, destination)
             temp_path = None
@@ -170,7 +169,7 @@ def archive_url(url: str, archive_dir: Path, timeout: float, max_bytes: int) -> 
                 etag=response.headers.get("ETag", ""),
                 last_modified=response.headers.get("Last-Modified", ""),
             )
-    except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
+    except (HTTPError, URLError, TimeoutError, IncompleteRead, ValueError, OSError) as exc:
         return ArchiveResult(source_url=url, retrieved_utc=retrieved, error=f"{type(exc).__name__}: {exc}")
     finally:
         if temp_path is not None:
@@ -290,8 +289,6 @@ def main() -> None:
             results[result.source_url] = result
             print(json.dumps({"url": result.source_url, "status": result.status, "error": result.error}))
 
-    # Preserve archived evidence from other scopes. A targeted employment retry
-    # must not silently delete AI-source manifest rows (and vice versa).
     write_manifest(MANIFEST, results)
     updated_rows = updated_files = 0
     if args.apply:
