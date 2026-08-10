@@ -1,0 +1,29 @@
+name: release-v0.2.0a2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/release-v0.2.0a2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create audited collection alpha release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view v0.2.0a2 >/dev/null 2>&1; then
+            echo 'v0.2.0a2 already exists; nothing to do.'
+            exit 0
+          fi
+          gh release create v0.2.0a2 \
+            --target "$GITHUB_SHA" \
+            --title 'v0.2.0a2 — audited workforce collection and immutable provenance' \
+            --notes 'Audited collection/provenance alpha. The 50-firm × 2018–2025 frame now contains 148 numeric employment firm-years across 31/50 firms, up from 124/27 in v0.2.0a1; 140/148 numeric observations have SHA-256 source bindings, 114 are exact, 17 are explicitly rounded, 17 retain scope/comparability warnings, and there are zero unresolved value conflicts. New primary-source coverage includes Almarai 2020, Air Arabia 2024–2025, Qatar Islamic Bank 2019–2024, Dubai Financial Market 2024–2025, Tabreed 2021–2025, and a complete Milaha 2018–2025 series. The source workflow now binds new evidence incrementally and treats existing research-row hashes as immutable rather than refreshing dynamic issuer URLs silently. This is still not a completed causal study: 252 firm-years remain unresolved, eight numeric rows remain hash-pending, the full AI search is unfinished, and the independent non-author coding exercise remains pending. No preferred causal coefficient is released.'
