@@ -1,0 +1,34 @@
+name: audit-ai-evidence-gaps
+on:
+  push:
+    paths:
+      - '.github/workflows/audit-ai-evidence-gaps.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q pandas
+      - name: Report firm-level AI evidence gaps
+        run: |
+          python - <<'PY'
+          import glob, pandas as pd
+          firms=pd.read_csv('metadata/firms_50.csv')
+          parts=[]
+          for p in glob.glob('data/pilot/research_batch_*_ai_evidence.csv'):
+              d=pd.read_csv(p,dtype=str)
+              if {'firm_id','year'}.issubset(d.columns):
+                  parts.append(d[['firm_id','year']])
+          ai=pd.concat(parts,ignore_index=True) if parts else pd.DataFrame(columns=['firm_id','year'])
+          have=set(ai.firm_id.dropna())
+          missing=firms.loc[~firms.firm_id.isin(have), ['firm_id','firm_name','country','sector']]
+          print('FIRMS_WITH_ANY_AI_EVIDENCE',len(have))
+          print('FIRMS_WITH_ZERO_AI_EVIDENCE',len(missing))
+          print(missing.to_csv(index=False))
+          PY
