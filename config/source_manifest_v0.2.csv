@@ -1,0 +1,18 @@
+source_id,source_family,geography,period,access_mode,expected_grain,required,notes
+wbes_jordan_2024,World Bank Enterprise Surveys,Jordan,2024,manual_download,firm,yes,Baseline firm survey
+wbes_jordan_ai_followup_2026,World Bank Enterprise Surveys,Jordan,2026,manual_download,firm,yes,AI-focused follow-up released May 2026
+wbes_egypt_2025,World Bank Enterprise Surveys,Egypt,2025,manual_download,firm,no,Released Feb 2026
+wbes_saudi_2025,World Bank Enterprise Surveys,Saudi Arabia,2025,manual_download,firm,no,Released Feb 2026
+wbes_oman_2025,World Bank Enterprise Surveys,Oman,2025,manual_download,firm,no,Released May 2026
+wbes_qatar_2025,World Bank Enterprise Surveys,Qatar,2025,manual_download,firm,no,Released Feb 2026
+wbes_iraq_panel,World Bank Enterprise Surveys,Iraq,2011-2022,manual_download,firm_panel,no,Panel released Dec 2025
+wbes_tunisia_panel,World Bank Enterprise Surveys,Tunisia,2013-2024,manual_download,firm_panel,no,Panel released Dec 2025
+ilostat_employment_sector,ILOSTAT,MENA,pre-2018 to latest,bulk_csv,country_sector_time,yes,Employment by economic activity
+ilostat_employment_occupation,ILOSTAT,MENA,pre-2018 to latest,bulk_csv,country_occupation_time,yes,Employment by occupation
+ilostat_hours,ILOSTAT,MENA,pre-2018 to latest,bulk_csv,country_group_time,yes,Hours outcome where available
+ilostat_informality,ILOSTAT,MENA,pre-2018 to latest,bulk_csv,country_group_time,yes,Formal/informal employment
+ilostat_genai_exposure,ILOSTAT,MENA,available years,bulk_csv,country_exposure_time,no,Published GenAI exposure indicators
+oecd_ai_exposure,OECD,global,2026,download,occupation,yes,Occupation-level AI exposure measure
+gdelt_gkg_ai_jobs,GDELT,MENA,2018-latest,bulk_or_api,document_event,yes,AI/jobs/automation narrative corpus
+ilostat_employment_industry_occupation,ILOSTAT,MENA,pre-2018 to latest,bulk_csv,country_industry_occupation_time,yes,Joint economic-activity by occupation employment table used to construct pre-period sector exposure weights
+esco_onet_crosswalk,European Commission ESCO,global,current,download,occupation_crosswalk,yes,Official O*NET to ESCO crosswalk; use ESCO ISCO-08 mapping to bridge OECD O*NET-SOC exposure to ILO occupation codes

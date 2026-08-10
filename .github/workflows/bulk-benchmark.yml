@@ -1,0 +1,48 @@
+name: bulk-data-benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      start:
+        description: "GDELT start date (YYYYMMDD)"
+        required: true
+        default: "20221130"
+      end:
+        description: "GDELT end date (YYYYMMDD)"
+        required: true
+        default: "20221201"
+      max_files:
+        description: "Maximum GDELT GKG files; 0 = all in date window"
+        required: true
+        default: "16"
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .[dev]
+      - name: Fetch and verify OECD exposure
+        run: |
+          python scripts/04_fetch_oecd_exposure.py
+          python scripts/05_ingest_oecd_exposure.py
+          python scripts/06_plot_oecd_exposure.py
+      - name: Stream bounded GDELT GKG window
+        run: |
+          python scripts/08_fetch_gdelt_gkg.py --start "${{ inputs.start }}" --end "${{ inputs.end }}" --max-files "${{ inputs.max_files }}"
+          python scripts/09_count_gdelt_rows.py
+      - name: Audit and tests
+        run: |
+          python scripts/30_run_audit.py
+          pytest -q
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bulk-benchmark-audits
+          path: |
+            outputs/audits/*.json
+            outputs/figures/*.png
+          retention-days: 30
