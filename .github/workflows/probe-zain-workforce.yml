@@ -9,45 +9,30 @@ on:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Crawl official Zain annual report pages
+      - name: Fetch exact official Zain workforce disclosure
         run: |
           python - <<'PY'
-          import hashlib,re,urllib.parse,urllib.request
+          import hashlib,re,urllib.request
           from html import unescape
-          start='https://investor.sa.zain.com/2025/'
-          hdr={'User-Agent':'Mozilla/5.0','Accept':'text/html,*/*','Accept-Encoding':'identity'}
-          def get(url):
-              req=urllib.request.Request(url,headers=hdr)
-              with urllib.request.urlopen(req,timeout=60) as r:
+          url='https://sa.zain.com/en/all-news/zain-ksa-wins-connected-world-ksa-award-its-leading-role-cultivating-next-gen-talent-and'
+          req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0','Accept':'text/html,*/*','Accept-Encoding':'identity'})
+          try:
+              with urllib.request.urlopen(req,timeout=90) as r:
                   data=r.read()
-              return data
-          root=get(start)
-          print('ROOT',len(root),hashlib.sha256(root).hexdigest())
-          s=root.decode('utf-8','ignore')
-          hrefs=re.findall(r'''href=["']([^"'#]+)''',s,re.I)
-          urls=[]
-          for h in hrefs:
-              u=urllib.parse.urljoin(start,unescape(h))
-              if u.startswith(start) and u not in urls: urls.append(u)
-          print('URL_COUNT',len(urls))
-          keys=re.compile(r'employee|workforce|headcount|human capital|people|saudization|saudisation|talent|nationalization',re.I)
-          for u in urls:
-              try: data=get(u)
-              except Exception as e:
-                  print('FAILED',u,type(e).__name__,e); continue
+              print('FINAL_URL='+r.geturl())
+              print('BYTES='+str(len(data)))
+              print('SHA256='+hashlib.sha256(data).hexdigest())
               text=unescape(re.sub(r'<[^>]+>',' ',data.decode('utf-8','ignore')))
               text=re.sub(r'\s+',' ',text)
-              hits=list(keys.finditer(text))
-              if hits:
-                  print('\nURL',u,'BYTES',len(data),'SHA256',hashlib.sha256(data).hexdigest(),'HITS',len(hits))
-                  shown=[]
-                  for m in hits:
-                      frag=text[max(0,m.start()-320):m.end()+500]
-                      if frag in shown: continue
-                      shown.append(frag)
-                      print('CTX',frag[:1100])
-                      if len(shown)>=12: break
+              for needle in ['1,500 employees','1500 employees','currently employing 23']:
+                  i=text.lower().find(needle.lower())
+                  if i>=0: print('EVIDENCE',text[max(0,i-500):i+900])
+              if '1,500 employees' not in text and '1500 employees' not in text:
+                  raise SystemExit('Expected headcount text not found')
+          except Exception as e:
+              print('FAILED',type(e).__name__,e)
+              raise
           PY
