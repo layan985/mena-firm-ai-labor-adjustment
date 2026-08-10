@@ -1,0 +1,80 @@
+name: probe-bupa-workforce
+
+on:
+  push:
+    paths:
+      - '.github/workflows/probe-bupa-workforce.yml'
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PDF tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+      - name: Download official Bupa sources
+        run: |
+          python - <<'PY'
+          import hashlib, pathlib, urllib.request
+          sources={
+            '2020':'https://buy.bupa.com.sa/docs/default-source/default-document-library/bupa_arabia_ar-2020_%28english_version%29.pdf?Status=Master&sfvrsn=a01808b5_2',
+            '2021':'https://bupa2021.annualreport.plus/en/annual-report/business_review/intellectual_capital.html',
+            '2022':'https://buy.bupa.com.sa/docs/default-source/annual-reports/bupa-arabia-ar22_english.pdf',
+            '2023':'https://buy.bupa.com.sa/docs/default-source/annual-reports/bupa-arabia-ar23_english.pdf',
+            '2024':'https://buy.bupa.com.sa/docs/default-source/annual-reports/bupar24_english.pdf',
+            '2025':'https://buy.bupa.com.sa/docs/default-source/annual-reports/bupa-arabia-sustainability-report-2025_eng.pdf',
+          }
+          for y,url in sources.items():
+              ext='.html' if y=='2021' else '.pdf'
+              out=pathlib.Path('/tmp')/f'bupa-{y}{ext}'
+              req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0','Accept':'application/pdf,text/html,*/*','Accept-Encoding':'identity'})
+              try:
+                  with urllib.request.urlopen(req,timeout=180) as r,out.open('wb') as f:
+                      while True:
+                          b=r.read(1024*1024)
+                          if not b: break
+                          f.write(b)
+                  data=out.read_bytes()
+                  print(f'YEAR={y} STATUS=downloaded FINAL_URL={r.geturl()} BYTES={len(data)} SHA256={hashlib.sha256(data).hexdigest()} TYPE={data[:8]!r}')
+              except Exception as e:
+                  print(f'YEAR={y} STATUS=failed ERROR={type(e).__name__}: {e}')
+          PY
+          for f in /tmp/bupa-*.pdf; do
+            [ -f "$f" ] || continue
+            head -c4 "$f" | grep -q '%PDF' || continue
+            pdftotext -layout "$f" "${f%.pdf}.txt"
+          done
+      - name: Extract workforce evidence
+        run: |
+          python - <<'PY'
+          import glob,re,html
+          pats=[r'total (number of )?employees',r'number of employees',r'\bemployees\b',r'workforce',r'headcount',r'saudization',r'saudisation',r'human capital',r'intellectual capital',r'people of determination']
+          for fn in sorted(glob.glob('/tmp/bupa-*.txt')):
+              print('\n==========',fn,'==========')
+              lines=open(fn,errors='ignore').read().splitlines()
+              hits=[]
+              for i,line in enumerate(lines):
+                  if any(re.search(p,line,re.I) for p in pats): hits.append(i)
+              shown=[]
+              for i in hits:
+                  if any(abs(i-j)<10 for j in shown): continue
+                  shown.append(i)
+                  print(f'--- lines {max(0,i-7)+1}-{min(len(lines),i+10)} ---')
+                  print('\n'.join(lines[max(0,i-7):min(len(lines),i+10)]))
+              print('HIT_COUNT=',len(hits))
+          fn='/tmp/bupa-2021.html'
+          try:
+              raw=open(fn,errors='ignore').read()
+              text=html.unescape(re.sub(r'<[^>]+>',' ',raw))
+              text=re.sub(r'\s+',' ',text)
+              print('\n========== BUPA 2021 HTML ==========')
+              for p in pats:
+                  for m in list(re.finditer(p,text,re.I))[:8]:
+                      print(text[max(0,m.start()-250):m.end()+350])
+          except FileNotFoundError:
+              pass
+          PY
