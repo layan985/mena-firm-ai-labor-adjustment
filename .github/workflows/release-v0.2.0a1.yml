@@ -1,0 +1,29 @@
+name: release-v0.2.0a1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/release-v0.2.0a1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create engineering alpha release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view v0.2.0a1 >/dev/null 2>&1; then
+            echo 'v0.2.0a1 already exists; nothing to do.'
+            exit 0
+          fi
+          gh release create v0.2.0a1 \
+            --target "$GITHUB_SHA" \
+            --title 'v0.2.0a1 — 50-firm collection and large-data engineering alpha' \
+            --notes 'Completed engineering/data-collection alpha. Includes the pre-outcome 50-firm × 2018–2025 frame, 124 numeric employment firm-years across 27 firms, 113 archive/hash-complete employment observations, 62 AI-evidence firm-years across 31 firms, 71 labeled AI passages, a frozen 15-passage blind second-coder sample, 103 archived source objects, 182 research-row source bindings, fail-closed provenance/freeze tooling, and the integrated OECD/GDELT large-data extension. The repository CI is the release verification gate. This release is not a completed causal study: 276 firm-years remain unresolved and the independent non-author coding exercise remains pending, so no preferred causal coefficient is released.'
