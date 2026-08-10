@@ -1,0 +1,70 @@
+name: probe-qnb-annual-reports
+
+on:
+  push:
+    paths:
+      - '.github/workflows/probe-qnb-annual-reports.yml'
+  workflow_dispatch:
+
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        year: ['2018','2019','2020','2021','2022','2023','2024','2025']
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PDF tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+      - name: Download and inspect official QNB annual report
+        env:
+          YEAR: ${{ matrix.year }}
+        run: |
+          python - <<'PY'
+          import hashlib, os, pathlib, urllib.request
+          y=os.environ['YEAR']
+          url=f'https://www.qnb.com/sites/qnb/qnbqatar/document/en/enAnnualReport{y}'
+          out=pathlib.Path(f'/tmp/qnb-{y}.pdf')
+          req=urllib.request.Request(url,headers={
+              'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151 Safari/537.36',
+              'Accept':'application/pdf,text/html;q=0.9,*/*;q=0.8',
+              'Accept-Encoding':'identity',
+              'Referer':'https://www.qnb.com/sites/qnb/qnbqatar/page/en/enannualreports.html'})
+          try:
+              with urllib.request.urlopen(req,timeout=180) as r,out.open('wb') as f:
+                  while True:
+                      b=r.read(1024*1024)
+                      if not b: break
+                      f.write(b)
+              print(f'YEAR={y} STATUS=downloaded FINAL_URL={r.geturl()} BYTES={out.stat().st_size} SHA256={hashlib.sha256(out.read_bytes()).hexdigest()} TYPE={out.read_bytes()[:8]!r}')
+          except Exception as e:
+              print(f'YEAR={y} STATUS=failed ERROR={type(e).__name__}: {e}')
+              raise SystemExit(0)
+          if out.read_bytes()[:4] != b'%PDF':
+              print(f'YEAR={y} STATUS=not_pdf')
+              raise SystemExit(0)
+          PY
+          if [ ! -f "/tmp/qnb-${YEAR}.pdf" ]; then exit 0; fi
+          if ! head -c4 "/tmp/qnb-${YEAR}.pdf" | grep -q '%PDF'; then exit 0; fi
+          pdftotext -layout "/tmp/qnb-${YEAR}.pdf" "/tmp/qnb-${YEAR}.txt"
+          python - <<'PY'
+          import os,re
+          y=os.environ['YEAR']
+          lines=open(f'/tmp/qnb-{y}.txt',errors='ignore').read().splitlines()
+          pats=[r'\bemployees\b',r'\bstaff\b',r'workforce',r'headcount',r'GRI 2-7',r'touchpoints supported']
+          hits=[]
+          for i,line in enumerate(lines):
+              if any(re.search(p,line,re.I) for p in pats): hits.append(i)
+          shown=[]
+          print(f'========== QNB {y} WORKFORCE HITS ==========')
+          for i in hits:
+              if any(abs(i-j)<8 for j in shown): continue
+              shown.append(i)
+              print(f'--- lines {max(0,i-5)+1}-{min(len(lines),i+8)} ---')
+              print('\n'.join(lines[max(0,i-5):min(len(lines),i+8)]))
+          print(f'HIT_COUNT={len(hits)}')
+          PY
