@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mena-ai-labor"
-version = "0.2.0a1"
+version = "0.2.0a2"
 description = "Firm-level AI adoption, occupational exposure, narratives, and labor-market adjustment research pipeline for MENA"
 requires-python = ">=3.12"
 dependencies = [
