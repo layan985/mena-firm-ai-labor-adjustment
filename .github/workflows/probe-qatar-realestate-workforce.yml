@@ -1,0 +1,78 @@
+name: probe-qatar-realestate-workforce
+
+on:
+  push:
+    paths:
+      - '.github/workflows/probe-qatar-realestate-workforce.yml'
+  workflow_dispatch:
+
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - firm: 'UDC'
+            year: '2025'
+            url: 'https://udcqatar.com/-/media/28448e61b207417e9756f8027195f1a5.ashx'
+          - firm: 'UDC'
+            year: '2024'
+            url: 'https://udcqatar.com/-/media/cd9bdd8807ba47ceb1a5db9dd527f2f1.ashx'
+          - firm: 'BARWA'
+            year: '2025'
+            url: 'https://www.barwa.com.qa/documents/en-doc-annual/2025.pdf'
+          - firm: 'BARWA'
+            year: '2024'
+            url: 'https://www.barwa.com.qa/documents/en-doc-annual/2024.pdf'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PDF tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+      - name: Download, hash and inspect official report
+        env:
+          FIRM: ${{ matrix.firm }}
+          YEAR: ${{ matrix.year }}
+          URL: ${{ matrix.url }}
+        run: |
+          python - <<'PY'
+          import hashlib,os,pathlib,urllib.request
+          firm=os.environ['FIRM']; y=os.environ['YEAR']; url=os.environ['URL']
+          out=pathlib.Path(f'/tmp/{firm.lower()}-{y}.pdf')
+          req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0','Accept':'application/pdf,*/*','Accept-Encoding':'identity'})
+          try:
+              with urllib.request.urlopen(req,timeout=240) as r,out.open('wb') as f:
+                  while True:
+                      b=r.read(1024*1024)
+                      if not b: break
+                      f.write(b)
+              data=out.read_bytes()
+              print(f'FIRM={firm} YEAR={y} STATUS=downloaded FINAL_URL={r.geturl()} BYTES={len(data)} SHA256={hashlib.sha256(data).hexdigest()} TYPE={data[:8]!r}')
+              if data[:4] != b'%PDF': raise SystemExit('not a PDF')
+          except Exception as e:
+              print(f'FIRM={firm} YEAR={y} STATUS=failed ERROR={type(e).__name__}: {e}')
+              raise SystemExit(0)
+          PY
+          f="/tmp/${FIRM,,}-${YEAR}.pdf"
+          [ -f "$f" ] || exit 0
+          pdftotext -layout "$f" "${f%.pdf}.txt"
+          python - <<'PY'
+          import os,re
+          firm=os.environ['FIRM']; y=os.environ['YEAR']; fn=f'/tmp/{firm.lower()}-{y}.txt'
+          lines=open(fn,errors='ignore').read().splitlines()
+          pats=[r'total workforce',r'total employees',r'number of employees',r'employee headcount',r'headcount',r'full.?time employees',r'workforce.*20(?:1[8-9]|2[0-5])',r'Qatarization',r'Qatarisation',r'Human Capital']
+          hits=[]
+          for i,line in enumerate(lines):
+              if any(re.search(p,line,re.I) for p in pats): hits.append(i)
+          shown=[]
+          print(f'========== {firm} {y} WORKFORCE ==========')
+          for i in hits:
+              if any(abs(i-j)<10 for j in shown): continue
+              shown.append(i)
+              print(f'--- lines {max(0,i-8)+1}-{min(len(lines),i+12)} ---')
+              print('\n'.join(lines[max(0,i-8):min(len(lines),i+12)]))
+          print('HIT_COUNT='+str(len(hits)))
+          PY
