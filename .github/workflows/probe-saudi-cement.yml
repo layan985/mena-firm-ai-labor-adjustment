@@ -9,7 +9,7 @@ on:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -26,7 +26,7 @@ jobs:
           FALLBACK='https://saudicement.com.sa/wp-content/themes/scc001/file-download.php?path=statement-files%2FAnnual_Report16.pdf'
           OUT='/tmp/saudi-cement-2025.pdf'
 
-          curl -fsSL --retry 3 --retry-delay 2 \
+          curl -fsSL --retry 2 --retry-delay 2 --connect-timeout 15 --max-time 45 \
             -A 'Mozilla/5.0' \
             -c /tmp/saudi-cement.cookies \
             "$PAGE" -o /tmp/annual-reports.html || true
@@ -46,7 +46,7 @@ jobs:
             *) URL="https://saudicement.com.sa/$URL" ;;
           esac
 
-          if curl -fsSL --retry 3 --retry-all-errors --retry-delay 3 \
+          if curl -fsSL --retry 2 --retry-all-errors --retry-delay 3 --connect-timeout 15 --max-time 45 \
             -A 'Mozilla/5.0' \
             -e "$PAGE" \
             -b /tmp/saudi-cement.cookies \
