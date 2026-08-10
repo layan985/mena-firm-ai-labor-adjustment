@@ -1,13 +1,28 @@
 from __future__ import annotations
 from pathlib import Path
+import hashlib
 import json
 import pandas as pd
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-CODER1 = ROOT / "data" / "validation" / "coder_1.csv"
+LABELED = ROOT / "data" / "interim" / "ai_evidence_labeled.csv"
 CODER2 = ROOT / "data" / "validation" / "coder_2.csv"
 OUT = ROOT / "data" / "validation" / "agreement_results.json"
+
+
+def validation_id(evidence_id: str) -> str:
+    return "VAL_" + hashlib.sha256(str(evidence_id).encode()).hexdigest()[:12].upper()
+
+
+def founder_key(labeled: pd.DataFrame) -> pd.DataFrame:
+    required = {"ai_evidence_id", "ai_label"}
+    missing = required.difference(labeled.columns)
+    if missing:
+        raise ValueError(f"Missing founder-label columns: {sorted(missing)}")
+    out = labeled[["ai_evidence_id", "ai_label"]].copy()
+    out["validation_id"] = out["ai_evidence_id"].map(validation_id)
+    return out[["validation_id", "ai_label"]].rename(columns={"ai_label": "coder_label"})
 
 
 def cohen_kappa(a, b, weights: str | None = None) -> float:
@@ -56,6 +71,9 @@ def score(c1: pd.DataFrame, c2: pd.DataFrame) -> dict:
 
 
 if __name__ == "__main__":
-    result = score(pd.read_csv(CODER1), pd.read_csv(CODER2))
-    OUT.write_text(json.dumps(result, indent=2, sort_keys=True))
+    c1 = founder_key(pd.read_csv(LABELED))
+    c2 = pd.read_csv(CODER2)
+    result = score(c1, c2)
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    OUT.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
     print(json.dumps(result, indent=2))
