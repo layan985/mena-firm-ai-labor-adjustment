@@ -1,11 +1,11 @@
 {
   "ai_evidence_firm_years": 66,
   "employment_conflict_firm_years": 0,
-  "employment_exact_firm_years": 125,
-  "employment_firm_years_with_numeric_value": 175,
+  "employment_exact_firm_years": 126,
+  "employment_firm_years_with_numeric_value": 176,
   "employment_rounded_firm_years": 26,
   "employment_scope_break_firm_years": 24,
-  "employment_unresolved_firm_years": 225,
+  "employment_unresolved_firm_years": 224,
   "firms_with_ai_evidence": 35,
   "firms_with_any_numeric_employment": 38,
   "firms_with_zero_numeric_employment": [
@@ -22,11 +22,11 @@
     "SA_8010",
     "SA_8210"
   ],
-  "numeric_employment_rows_hash_complete": 167,
+  "numeric_employment_rows_hash_complete": 168,
   "numeric_employment_rows_with_hash_pending": 8,
   "partial_firm_coverage": {
     "AE_DFM_AIRARABIA": 5,
-    "AE_DFM_AJMANBANK": 1,
+    "AE_DFM_AJMANBANK": 2,
     "AE_DFM_ARMX": 2,
     "AE_DFM_DEYAAR": 2,
     "AE_DFM_DFM": 2,
