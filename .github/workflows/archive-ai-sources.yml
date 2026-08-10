@@ -18,14 +18,14 @@ jobs:
           python-version: '3.12'
       - run: pip install -q pandas
       - name: Archive pending AI evidence sources
-        run: python scripts/archive_pending_sources.py --scope ai --workers 6 --timeout 90
+        run: python scripts/archive_pending_sources.py --scope ai --workers 6 --timeout 180
       - name: Rebuild AI validation input
         run: python scripts/build_ai_validation_input.py
       - name: Commit archival results
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add data/pilot/research_batch_*_ai_evidence.csv data/pilot/source_archive_manifest.csv data/interim/ai_evidence_labeled.csv source_archive || true
+          git add data/pilot/research_batch_*_ai_evidence.csv data/pilot/source_archive_manifest.csv data/interim/ai_evidence_labeled.csv data/raw/source_archive
           if git diff --cached --quiet; then
             echo 'No AI archival changes.'
             exit 0
