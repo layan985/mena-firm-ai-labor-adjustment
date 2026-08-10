@@ -1,11 +1,11 @@
 {
   "ai_evidence_firm_years": 62,
   "employment_conflict_firm_years": 0,
-  "employment_exact_firm_years": 113,
-  "employment_firm_years_with_numeric_value": 145,
+  "employment_exact_firm_years": 114,
+  "employment_firm_years_with_numeric_value": 148,
   "employment_rounded_firm_years": 17,
-  "employment_scope_break_firm_years": 15,
-  "employment_unresolved_firm_years": 255,
+  "employment_scope_break_firm_years": 17,
+  "employment_unresolved_firm_years": 252,
   "firms_with_ai_evidence": 31,
   "firms_with_any_numeric_employment": 31,
   "firms_with_zero_numeric_employment": [
@@ -29,7 +29,7 @@
     "SA_8010",
     "SA_8210"
   ],
-  "numeric_employment_rows_hash_complete": 137,
+  "numeric_employment_rows_hash_complete": 140,
   "numeric_employment_rows_with_hash_pending": 8,
   "partial_firm_coverage": {
     "AE_DFM_AIRARABIA": 5,
@@ -42,7 +42,7 @@
     "AE_DFM_EMAARDEV": 1,
     "AE_DFM_EMIRATESNBD": 4,
     "AE_DFM_MASQ": 2,
-    "AE_DFM_TABREED": 2,
+    "AE_DFM_TABREED": 5,
     "QA_DHBK": 7,
     "QA_MARK": 6,
     "QA_QEWS": 4,
