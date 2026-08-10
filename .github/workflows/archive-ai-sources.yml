@@ -6,6 +6,11 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+
+concurrency:
+  group: source-provenance-manifest
+  cancel-in-progress: false
+
 jobs:
   archive:
     runs-on: ubuntu-latest
