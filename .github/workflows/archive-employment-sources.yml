@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'data/pilot/research_batch_*_employment.csv'
+      - 'scripts/archive_pilot_sources.py'
       - '.github/workflows/archive-employment-sources.yml'
   workflow_dispatch:
 
