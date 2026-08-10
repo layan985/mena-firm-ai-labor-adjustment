@@ -1,0 +1,74 @@
+name: probe-gwc-esg-workforce
+
+on:
+  push:
+    paths:
+      - '.github/workflows/probe-gwc-esg-workforce.yml'
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PDF tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+      - name: Discover and download official GWC ESG reports
+        run: |
+          python - <<'PY'
+          import hashlib, html, pathlib, re, urllib.parse, urllib.request
+          page='https://www.gwclogistics.com/investors-relations/esg-report/'
+          hdr={'User-Agent':'Mozilla/5.0','Accept':'text/html,application/pdf,*/*','Accept-Encoding':'identity'}
+          def get(url,timeout=180):
+              req=urllib.request.Request(url,headers=hdr)
+              with urllib.request.urlopen(req,timeout=timeout) as r: return r.geturl(),r.read()
+          final,data=get(page,90)
+          print('ARCHIVE_PAGE',final,'BYTES',len(data),'SHA256',hashlib.sha256(data).hexdigest())
+          s=data.decode('utf-8','ignore')
+          # Print every PDF-ish link with nearby text; then select reports by 4-digit year.
+          matches=[]
+          for m in re.finditer(r'href=["\']([^"\']+)["\']',s,re.I):
+              href=html.unescape(m.group(1)); u=urllib.parse.urljoin(page,href)
+              ctx=re.sub(r'<[^>]+>',' ',s[max(0,m.start()-250):m.end()+250])
+              ctx=' '.join(html.unescape(ctx).split())
+              if '.pdf' in u.lower() or 'esg' in ctx.lower():
+                  print('LINK',u,'CTX',ctx[:700])
+                  matches.append((u,ctx))
+          chosen={}
+          for u,ctx in matches:
+              for y in ['2021','2022','2023','2024','2025']:
+                  if y in ctx and y not in chosen and '.pdf' in u.lower(): chosen[y]=u
+          print('CHOSEN',chosen)
+          for y,u in chosen.items():
+              try:
+                  final,pdf=get(u,240)
+                  out=pathlib.Path(f'/tmp/gwc-{y}.pdf'); out.write_bytes(pdf)
+                  print(f'YEAR={y} FINAL_URL={final} BYTES={len(pdf)} SHA256={hashlib.sha256(pdf).hexdigest()} TYPE={pdf[:8]!r}')
+              except Exception as e: print('FAILED',y,u,type(e).__name__,e)
+          PY
+          for f in /tmp/gwc-*.pdf; do
+            [ -f "$f" ] || continue
+            head -c4 "$f" | grep -q '%PDF' || continue
+            pdftotext -layout "$f" "${f%.pdf}.txt"
+          done
+      - name: Extract workforce tables
+        run: |
+          python - <<'PY'
+          import glob,re
+          pats=[r'total employees',r'total workforce',r'number of employees',r'employee headcount',r'headcount',r'full.?time employees',r'GRI 2-7',r'workforce by',r'our people',r'Qatarization',r'Qatarisation']
+          for fn in sorted(glob.glob('/tmp/gwc-*.txt')):
+              print('\n==========',fn,'==========')
+              lines=open(fn,errors='ignore').read().splitlines(); hits=[]
+              for i,line in enumerate(lines):
+                  if any(re.search(p,line,re.I) for p in pats): hits.append(i)
+              shown=[]
+              for i in hits:
+                  if any(abs(i-j)<15 for j in shown): continue
+                  shown.append(i)
+                  print(f'--- lines {max(0,i-12)+1}-{min(len(lines),i+20)} ---')
+                  print('\n'.join(lines[max(0,i-12):min(len(lines),i+20)]))
+              print('HIT_COUNT='+str(len(hits)))
+          PY
