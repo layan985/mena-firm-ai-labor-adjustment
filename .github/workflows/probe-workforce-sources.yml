@@ -9,95 +9,77 @@ on:
 jobs:
   probe:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - name: Install PDF text tools
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq poppler-utils
-      - name: Download official source reports
+      - name: Download DFM and Tabreed official reports
         run: |
           python - <<'PY'
-          import urllib.request
+          import hashlib, pathlib, urllib.request
           sources={
-            '/tmp/qib2024.pdf':'https://www.qib.com.qa/-/media/project/qib/files/sustainability-report/en/qib-sr-2024_en.pdf?rev=dd7e720596404e7c80ab6064c1d026c8',
-            '/tmp/milaha2025.pdf':'https://www.milaha.com/sites/default/files/2026-02/Milaha_AR2025_ENG_Book_0.pdf',
-            '/tmp/dfm2025.pdf':'https://assets.dfm.ae/docs/default-source/dfm-ir/annual-report/dfm-integrated-report-2025-english.pdf?sfvrsn=9f119281_0',
-            '/tmp/tabreed2025.pdf':'https://tabreed.ae/sites/default/files/2026-03/2025_Annual_Integrated_Report_English.pdf',
+            'dfm2025':'https://assets.dfm.ae/docs/default-source/dfm-ir/annual-report/dfm-integrated-report-2025-english.pdf?sfvrsn=9f119281_0',
+            'dfm2024':'https://assets.dfm.ae/docs/default-source/dfm-ir/annual-report/dfm-integrated-report-2024.pdf?sfvrsn=3013b681_2',
+            'tabreed2025':'https://tabreed.ae/sites/default/files/2026-03/2025_Annual_Integrated_Report_English.pdf',
+            'tabreed2024':'https://tabreed.ae/sites/default/files/2025-03/2024_Annual_Integrated_Report_En.pdf',
+            'tabreed2023':'https://tabreed.ae/sites/default/files/2025-03/2023%20Integrated%20Annual%20Report_08%20MAR%202023.pdf',
+            'tabreed2022':'https://tabreed.ae/sites/default/files/2025-03/2022%20Integrated%20Report_31%20DEC%202022.pdf',
+            'tabreed2021':'https://tabreed.ae/sites/default/files/2025-03/2021%20Integrated%20Report_31%20DEC%202021.pdf',
           }
-          for out,url in sources.items():
-              req=urllib.request.Request(url, headers={'User-Agent':'Mozilla/5.0'})
-              with urllib.request.urlopen(req, timeout=240) as r, open(out,'wb') as f:
-                  while True:
-                      chunk=r.read(1024*1024)
-                      if not chunk: break
-                      f.write(chunk)
-              print(out, url)
+          for name,url in sources.items():
+              out=pathlib.Path('/tmp')/f'{name}.pdf'
+              try:
+                  req=urllib.request.Request(url, headers={'User-Agent':'Mozilla/5.0'})
+                  with urllib.request.urlopen(req, timeout=240) as r, out.open('wb') as f:
+                      while True:
+                          chunk=r.read(1024*1024)
+                          if not chunk: break
+                          f.write(chunk)
+                  h=hashlib.sha256(out.read_bytes()).hexdigest()
+                  print(f'DOWNLOADED {name} bytes={out.stat().st_size} sha256={h} url={url}')
+              except Exception as e:
+                  print(f'FAILED {name}: {type(e).__name__}: {e}')
           PY
-          sha256sum /tmp/qib2024.pdf /tmp/milaha2025.pdf /tmp/dfm2025.pdf /tmp/tabreed2025.pdf
-          pdftotext -layout /tmp/qib2024.pdf /tmp/qib2024.txt
-          pdftotext -layout /tmp/milaha2025.pdf /tmp/milaha2025.txt
-          pdftotext -layout /tmp/dfm2025.pdf /tmp/dfm2025.txt
-          pdftotext -layout /tmp/tabreed2025.pdf /tmp/tabreed2025.txt
-      - name: Print QIB workforce evidence windows
+          for f in /tmp/dfm*.pdf /tmp/tabreed*.pdf; do
+            [ -f "$f" ] || continue
+            pdftotext -layout "$f" "${f%.pdf}.txt"
+          done
+      - name: Extract DFM comparable workforce evidence
         run: |
           python - <<'PY'
-          import re
-          text=open('/tmp/qib2024.txt',errors='ignore').read().splitlines()
-          pats=[r'total employees',r'number of employees',r'total workforce',r'workforce',r'headcount',r'full.?time',r'fte',r'qatarization']
-          for i,line in enumerate(text):
-              if any(re.search(p,line,re.I) for p in pats):
-                  if 'workforce overview' in line.lower() or 'total workforce' in line.lower() or 'full time employees' in line.lower():
-                      print('\n'.join(text[max(0,i-3):min(len(text),i+8)]))
+          import glob,re
+          for fn in sorted(glob.glob('/tmp/dfm*.txt')):
+              print('\n==========',fn,'==========')
+              lines=open(fn,errors='ignore').read().splitlines()
+              pats=[r'with\s+\d+[\d,]*\s+employees',r'full.?time employees',r'number of local',r'number of expat',r'total.*employees',r'workforce']
+              hits=[]
+              for i,line in enumerate(lines):
+                  if any(re.search(p,line,re.I) for p in pats): hits.append(i)
+              shown=[]
+              for i in hits:
+                  if any(abs(i-j)<12 for j in shown): continue
+                  shown.append(i)
+                  print(f'--- lines {max(0,i-8)+1}-{min(len(lines),i+12)} ---')
+                  print('\n'.join(lines[max(0,i-8):min(len(lines),i+12)]))
           PY
-      - name: Print Milaha 2025 employee evidence
+      - name: Extract Tabreed comparable workforce evidence
         run: |
           python - <<'PY'
-          import re
-          text=open('/tmp/milaha2025.txt',errors='ignore').read().splitlines()
-          patterns=[r'total number of.*employees',r'employees approxim',r'crew and divers',r'number of employees']
-          hits=[]
-          for i,line in enumerate(text):
-              if any(re.search(p,line,re.I) for p in patterns): hits.append(i)
-          for i in hits:
-              print(f'--- Milaha lines {max(0,i-4)+1}-{min(len(text),i+7)} ---')
-              print('\n'.join(text[max(0,i-4):min(len(text),i+7)]))
-          if not hits:
-              print('No matching Milaha workforce disclosure found.')
-          PY
-      - name: Print DFM workforce evidence windows
-        run: |
-          python - <<'PY'
-          import re
-          text=open('/tmp/dfm2025.txt',errors='ignore').read().splitlines()
-          patterns=[r'total employees',r'total workforce',r'number of employees',r'employee headcount',r'headcount',r'full.?time employees',r'workforce by',r'our people']
-          hits=[]
-          for i,line in enumerate(text):
-              if any(re.search(p,line,re.I) for p in patterns): hits.append(i)
-          seen=[]
-          for i in hits:
-              if any(abs(i-j)<8 for j in seen): continue
-              seen.append(i)
-              print(f'--- DFM lines {max(0,i-7)+1}-{min(len(text),i+10)} ---')
-              print('\n'.join(text[max(0,i-7):min(len(text),i+10)]))
-          if not hits:
-              print('No matching DFM workforce disclosure found.')
-          PY
-      - name: Print Tabreed workforce evidence windows
-        run: |
-          python - <<'PY'
-          import re
-          text=open('/tmp/tabreed2025.txt',errors='ignore').read().splitlines()
-          patterns=[r'total employees',r'total workforce',r'number of employees',r'employee headcount',r'headcount',r'full.?time employees',r'workforce by',r'our people',r'employees by']
-          hits=[]
-          for i,line in enumerate(text):
-              if any(re.search(p,line,re.I) for p in patterns): hits.append(i)
-          seen=[]
-          for i in hits:
-              if any(abs(i-j)<8 for j in seen): continue
-              seen.append(i)
-              print(f'--- Tabreed lines {max(0,i-7)+1}-{min(len(text),i+10)} ---')
-              print('\n'.join(text[max(0,i-7):min(len(text),i+10)]))
-          if not hits:
-              print('No matching Tabreed workforce disclosure found.')
+          import glob,re
+          for fn in sorted(glob.glob('/tmp/tabreed*.txt')):
+              print('\n==========',fn,'==========')
+              lines=open(fn,errors='ignore').read().splitlines()
+              pats=[r'S2\.1',r'total employees',r'total workforce',r'full.?time employees',r'enterprise headcount',r'number of employees',r'headcount held by full']
+              hits=[]
+              for i,line in enumerate(lines):
+                  if any(re.search(p,line,re.I) for p in pats): hits.append(i)
+              shown=[]
+              for i in hits:
+                  if any(abs(i-j)<12 for j in shown): continue
+                  shown.append(i)
+                  print(f'--- lines {max(0,i-8)+1}-{min(len(lines),i+12)} ---')
+                  print('\n'.join(lines[max(0,i-8):min(len(lines),i+12)]))
           PY
