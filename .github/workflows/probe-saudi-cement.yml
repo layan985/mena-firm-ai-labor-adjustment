@@ -1,0 +1,90 @@
+name: probe-saudi-cement
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/probe-saudi-cement.yml'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PDF text tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+
+      - name: Download official Saudi Cement 2025 annual report
+        shell: bash
+        run: |
+          set -u
+          PAGE='https://saudicement.com.sa/category/investor-relations/annual-reports/'
+          FALLBACK='https://saudicement.com.sa/wp-content/themes/scc001/file-download.php?path=statement-files%2FAnnual_Report16.pdf'
+          OUT='/tmp/saudi-cement-2025.pdf'
+
+          curl -fsSL --retry 3 --retry-delay 2 \
+            -A 'Mozilla/5.0' \
+            -c /tmp/saudi-cement.cookies \
+            "$PAGE" -o /tmp/annual-reports.html || true
+
+          URL=$(python - <<'PY'
+          import html, re, pathlib
+          p = pathlib.Path('/tmp/annual-reports.html')
+          text = p.read_text(errors='ignore') if p.exists() else ''
+          m = re.search(r'href=["\']([^"\']*file-download\.php\?[^"\']*Annual_Report16\.pdf[^"\']*)', text, re.I)
+          print(html.unescape(m.group(1)) if m else '')
+          PY
+          )
+          [ -n "$URL" ] || URL="$FALLBACK"
+          case "$URL" in
+            http*) ;;
+            /*) URL="https://saudicement.com.sa$URL" ;;
+            *) URL="https://saudicement.com.sa/$URL" ;;
+          esac
+
+          if curl -fsSL --retry 3 --retry-all-errors --retry-delay 3 \
+            -A 'Mozilla/5.0' \
+            -e "$PAGE" \
+            -b /tmp/saudi-cement.cookies \
+            "$URL" -o "$OUT" \
+            && [ "$(head -c 4 "$OUT")" = '%PDF' ]; then
+            echo "SOURCE_STATUS=available" | tee /tmp/source-status.txt
+            echo "SOURCE_URL=$URL" | tee -a /tmp/source-status.txt
+            sha256sum "$OUT" | tee -a /tmp/source-status.txt
+            pdftotext -layout "$OUT" /tmp/saudi-cement-2025.txt
+          else
+            rm -f "$OUT"
+            echo "SOURCE_STATUS=temporarily_unavailable" | tee /tmp/source-status.txt
+            echo "SOURCE_URL=$URL" | tee -a /tmp/source-status.txt
+            echo 'Official annual-report page is live, but its PDF handler did not return a usable PDF to this runner.' | tee -a /tmp/source-status.txt
+          fi
+
+      - name: Extract employee evidence
+        run: |
+          if [ ! -s /tmp/saudi-cement-2025.txt ]; then
+            cat /tmp/source-status.txt
+            echo 'Skipping extraction because the external PDF source is unavailable.'
+            exit 0
+          fi
+          python - <<'PY'
+          import re
+          lines=open('/tmp/saudi-cement-2025.txt',errors='ignore').read().splitlines()
+          pats=[r'total employees',r'number of employees',r'workforce',r'headcount',r'saudization',r'saudisation',r'employees.*2025',r'employees.*2024']
+          hits=[]
+          for i,line in enumerate(lines):
+              if any(re.search(p,line,re.I) for p in pats):
+                  hits.append(i)
+          shown=[]
+          for i in hits:
+              if any(abs(i-j)<10 for j in shown):
+                  continue
+              shown.append(i)
+              print(f'--- lines {max(0,i-8)+1}-{min(len(lines),i+12)} ---')
+              print('\n'.join(lines[max(0,i-8):min(len(lines),i+12)]))
+          if not hits:
+              print('NO EMPLOYEE MATCHES')
+          PY
