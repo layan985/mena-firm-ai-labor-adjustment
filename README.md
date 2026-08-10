@@ -1,35 +1,48 @@
 # MENA firm AI adoption and labor adjustment
 
-Annual reports often say a company is “using AI” long before they identify an operational deployment. The same reports can switch between group employees, domestic employees, contractors, and employee-benefit populations without making the change obvious. Those measurement problems have to be resolved before an event-study coefficient means anything.
+Annual reports often say a company is “using AI” long before they identify an operational deployment. The same reports can switch between group employees, domestic employees, contractors, full-time employees, and employee-benefit populations without making the change obvious. Those measurement problems have to be resolved before an event-study coefficient means anything.
 
 This repository builds a 50-firm × 2018–2025 panel while keeping AI evidence, employment definitions, source documents, reporting perimeter, and corrections auditable.
 
 ## Current status
 
-**v0.2.0a1 is the completed engineering and data-collection alpha.** The 50-firm frame, source archive, validation/freeze machinery, blinded coding workflow, and large-data OECD/GDELT extension are integrated on `main` and CI-tested. The empirical panel is **not yet frozen for causal estimation** because real collection and an independent second-human coding gate remain unfinished.
+**v0.2.0a2 is the audited collection/provenance alpha.** The 50-firm frame, validation/freeze machinery, blinded coding workflow, OECD/GDELT extension, and incremental immutable source-binding workflow are integrated on `main` and CI-tested. The empirical panel is **not yet frozen for causal estimation** because real collection and an independent second-human coding gate remain unfinished.
 
 As of 10 August 2026:
 
 | Item | Current state |
 | --- | --- |
 | Target frame | 50 firms × 2018–2025 = 400 firm-years |
-| Numeric employment evidence | 124/400 firm-years |
-| Firms with numeric employment | 27/50 |
-| Employment observations with archived SHA-256 source bindings | 113/124 |
+| Numeric employment evidence | 148/400 firm-years |
+| Firms with numeric employment | 31/50 |
+| Exact numeric employment observations | 114 |
+| Rounded numeric employment observations | 17 |
+| Numeric observations carrying a scope/comparability warning | 17 |
+| Employment observations with SHA-256 source bindings | 140/148 |
+| Employment conflicts | 0 |
 | AI evidence coverage | 62 firm-years across 31/50 firms |
 | Unique labeled AI passages | 71 |
 | Blinded second-coder sample | 15 passages (21.1%) drawn and frozen |
-| Archived source objects | 103 unique objects |
-| Research rows bound to exact source bytes | 182 |
-| Unresolved firm-years | 276 |
+| Unresolved firm-years | 252 |
 | Preferred causal estimates | Not inspected |
 | Independent second-human coding | Pending |
 
-Eleven numeric employment observations remain behind issuer access failures and are explicitly documented rather than treated as archive-complete observations.
+The collection pass behind v0.2.0a2 added 24 numeric firm-years without weakening the evidence rule. Newly recovered primary-source series include Almarai 2020, Air Arabia 2024–2025, Qatar Islamic Bank 2019–2024, Dubai Financial Market 2024–2025, Tabreed 2021–2025, and a complete Milaha 2018–2025 series. Where issuers publish rounded totals or change workforce terminology, those limitations stay explicit in the row metadata.
+
+Eight numeric employment rows remain hash-pending. Issuer access failures and missing disclosures remain unresolved rather than being replaced with secondary estimates.
+
+## Provenance behavior
+
+The collection workflow now separates two operations that should not be conflated:
+
+- **full source refresh**, used deliberately when a historical source must be re-fetched or audited;
+- **incremental immutable binding**, used during normal collection to download only sources needed by new/unbound rows.
+
+An existing research-row hash is never silently replaced by whatever bytes a dynamic issuer URL happens to serve later. If a pre-existing immutable hash must be registered in the manifest, the downloader must reproduce those exact bytes or fail. A dead or changed legacy URL therefore cannot rewrite historical evidence or block unrelated new sources from being bound.
 
 ## Large-data extension
 
-The alpha also includes a separate scalable exposure/narrative pipeline rather than leaving it on an experimental branch:
+The alpha also includes a separate scalable exposure/narrative pipeline:
 
 - a versioned source manifest covering WBES, ILOSTAT, OECD AI exposure, GDELT and the ESCO/O*NET occupational crosswalk;
 - an OECD occupation-level AI exposure downloader with retrieval metadata and SHA-256 hashing;
@@ -50,11 +63,11 @@ These are not the same estimand. Adoption timing is chosen by the firm and may r
 
 - **Aramco:** substantive AI language is visible by 2020, so the adoption date is left-censored rather than mechanically assigned to 2020.
 - **stc:** the 2023–2024 headcount decline is flagged because a workforce right-sizing plan and possible reporting-perimeter changes overlap the change.
-- **Almarai:** a broad “50,000+ workforce” headline is not spliced into the narrower GCC employee-benefit population; 2024 forward-looking AI language is planning, not treatment.
+- **Almarai:** the 2020 comparable series uses the retrospective GCC + USA + Argentina workforce definition; the broader 41,222 annual-report total is not spliced into that narrower series.
 - **Banque Saudi Fransi:** lower Bank-entity figures are kept separate from the comparable Group series; the 2023 one-person retrospective restatement is preserved rather than silently overwritten.
 - **QNB:** ESG workforce figures with a different reporting perimeter are stored separately from rounded global workforce disclosures.
-
-The detailed record is in the audit logs, measurement files, and dated notes under `docs/`, `data/pilot/`, and `notes/`.
+- **Milaha:** 2018–2025 annual governance disclosures are retained as explicitly approximate; 2018–2020 carry a perimeter warning because those editions do not explicitly say “including crew and divers,” while 2021 onward do.
+- **Tabreed:** 2021–2022 “Total Employees” observations are kept separate from the explicit 2023–2025 ESG S2.1 full-time definition and carry a comparability warning. Contractor/consultant populations are not added to either series.
 
 ## Identification
 
@@ -73,11 +86,13 @@ The repository includes:
 
 - `metadata/firms_50.csv`: the canonical pre-outcome 50-firm frame;
 - `data/pilot/research_batch_*`: auditable employment, AI-evidence, labor-cost, and measurement-audit batches;
-- `data/pilot/source_archive_manifest.csv`: exact source-object bindings and SHA-256 provenance;
+- `data/pilot/source_archive_manifest.csv`: source-object bindings and SHA-256 provenance;
+- `data/interim/pilot_50_coverage_summary.json`: machine-generated current coverage counts;
 - `docs/PILOT_50_COLLECTION_PROTOCOL.md`: collection rules;
 - `docs/AI_CODING_CODEBOOK_V0_2.md`: 0–3 AI substantiveness rubric;
 - `scripts/build_pilot_coverage.py`: machine-audited coverage report;
-- `scripts/archive_pilot_sources.py`: content-addressed source archival;
+- `scripts/archive_pilot_sources.py`: explicit full source archival/refresh;
+- `scripts/archive_pending_sources.py`: incremental immutable binder for new evidence;
 - `scripts/build_ai_validation_input.py` and `scripts/draw_blinded_validation_sample.py`: blinded validation workflow;
 - `scripts/score_intercoder_agreement.py`: prespecified agreement calculation;
 - `scripts/freeze_pilot_50.py`: fail-closed empirical freeze gate;
@@ -96,10 +111,10 @@ python scripts/validate_source_manifest.py
 python scripts/report_pilot_conflicts.py
 ```
 
-The integrated alpha passes the repository CI, including Python tests/pipeline checks, 50-firm coverage/source audits, R syntax validation and the LaTeX paper build.
+The repository CI covers Python tests/pipeline checks, the 50-firm coverage/source audits, R syntax validation and the LaTeX paper build. Employment-source collection additionally runs the incremental immutable binder before refreshing the committed coverage summary.
 
 ## Freeze rule
 
-The engineering alpha can be released while the empirical study remains gated. A preferred causal coefficient is not released until the 50 × 2018–2025 frame has an attempted headcount status for every firm-year, provenance failures are resolved or explicitly classified, the AI search is complete, and the blinded second-human coding exercise has been completed and scored.
+The engineering/data alpha can be released while the empirical study remains gated. A preferred causal coefficient is not released until the 50 × 2018–2025 frame has an attempted headcount status for every firm-year, provenance failures are resolved or explicitly classified, the AI search is complete, and the blinded second-human coding exercise has been completed and scored.
 
-Missing evidence is never replaced with zero, a guessed adoption date, or an AI-generated second-coder label.
+Missing evidence is never replaced with zero, a guessed adoption date, a commercial headcount estimate, or an AI-generated second-coder label.
