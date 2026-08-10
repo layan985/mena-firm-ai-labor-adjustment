@@ -6,7 +6,9 @@ This repository builds a 50-firm × 2018–2025 panel while keeping AI evidence,
 
 ## Current status
 
-As of 10 August 2026, the 50-firm frame and validation machinery are built and real collection is underway. The panel is **not yet frozen for causal estimation**.
+**v0.2.0a1 is the completed engineering and data-collection alpha.** The 50-firm frame, source archive, validation/freeze machinery, blinded coding workflow, and large-data OECD/GDELT extension are integrated on `main` and CI-tested. The empirical panel is **not yet frozen for causal estimation** because real collection and an independent second-human coding gate remain unfinished.
+
+As of 10 August 2026:
 
 | Item | Current state |
 | --- | --- |
@@ -17,11 +19,26 @@ As of 10 August 2026, the 50-firm frame and validation machinery are built and r
 | AI evidence coverage | 62 firm-years across 31/50 firms |
 | Unique labeled AI passages | 71 |
 | Blinded second-coder sample | 15 passages (21.1%) drawn and frozen |
+| Archived source objects | 103 unique objects |
+| Research rows bound to exact source bytes | 182 |
 | Unresolved firm-years | 276 |
 | Preferred causal estimates | Not inspected |
 | Independent second-human coding | Pending |
 
-The collection branch also archives 103 unique source objects and binds 182 research rows to exact source bytes. Eleven numeric employment observations remain behind issuer access failures and are explicitly documented rather than treated as verified archive-complete observations.
+Eleven numeric employment observations remain behind issuer access failures and are explicitly documented rather than treated as archive-complete observations.
+
+## Large-data extension
+
+The alpha also includes a separate scalable exposure/narrative pipeline rather than leaving it on an experimental branch:
+
+- a versioned source manifest covering WBES, ILOSTAT, OECD AI exposure, GDELT and the ESCO/O*NET occupational crosswalk;
+- an OECD occupation-level AI exposure downloader with retrieval metadata and SHA-256 hashing;
+- machine-readable OECD workbook ingestion to CSV/Parquet plus an exposure audit and figure;
+- bounded streaming of GDELT 2.x GKG files instead of loading an unbounded corpus into memory;
+- reproducible audit scripts and a manually triggered bulk-data benchmark workflow;
+- an empirical-design note that freezes pre-shock exposure weights and requires crosswalk diagnostics, pre-trend tests, placebo dates, clustering sensitivity and leave-one-country-out checks.
+
+`docs/BULK_RUN.md` separates implemented ingestion capacity from data actually processed: no record count becomes a result or CV claim until the corresponding audit exists.
 
 ## Research question
 
@@ -52,7 +69,7 @@ Firm adoption will be shown in event time only after disclosure coding is frozen
 
 ## Data and validation artifacts
 
-The repository now includes:
+The repository includes:
 
 - `metadata/firms_50.csv`: the canonical pre-outcome 50-firm frame;
 - `data/pilot/research_batch_*`: auditable employment, AI-evidence, labor-cost, and measurement-audit batches;
@@ -63,8 +80,9 @@ The repository now includes:
 - `scripts/archive_pilot_sources.py`: content-addressed source archival;
 - `scripts/build_ai_validation_input.py` and `scripts/draw_blinded_validation_sample.py`: blinded validation workflow;
 - `scripts/score_intercoder_agreement.py`: prespecified agreement calculation;
-- `scripts/freeze_pilot_50.py`: fail-closed freeze gate;
-- `src/mena_ai_labor/pilot50.py`: collection/release schema validation.
+- `scripts/freeze_pilot_50.py`: fail-closed empirical freeze gate;
+- `src/mena_ai_labor/pilot50.py`: collection/release schema validation;
+- `config/source_manifest_v0.2.csv`, `docs/BULK_RUN.md`, and `docs/EMPIRICAL_DESIGN_V0.2.md`: large-data extension contract.
 
 Licensed or registration-gated source files are not redistributed when terms do not permit it.
 
@@ -78,10 +96,10 @@ python scripts/validate_source_manifest.py
 python scripts/report_pilot_conflicts.py
 ```
 
-The branch audit reported 33/33 Python tests passing plus a full source-byte re-hash and conflict audit.
+The integrated alpha passes the repository CI, including Python tests/pipeline checks, 50-firm coverage/source audits, R syntax validation and the LaTeX paper build.
 
 ## Freeze rule
 
-The project does not release a preferred causal coefficient until the 50 × 2018–2025 frame has an attempted headcount status for every firm-year, provenance failures are resolved or explicitly classified, the AI search is complete, and the blinded second-human coding exercise has been completed and scored.
+The engineering alpha can be released while the empirical study remains gated. A preferred causal coefficient is not released until the 50 × 2018–2025 frame has an attempted headcount status for every firm-year, provenance failures are resolved or explicitly classified, the AI search is complete, and the blinded second-human coding exercise has been completed and scored.
 
 Missing evidence is never replaced with zero, a guessed adoption date, or an AI-generated second-coder label.
