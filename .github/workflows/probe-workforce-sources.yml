@@ -1,0 +1,47 @@
+name: probe-workforce-sources
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/probe-workforce-sources.yml'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PDF text tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+      - name: Download official QIB sustainability report
+        run: |
+          python - <<'PY'
+          import urllib.request
+          url='https://www.qib.com.qa/-/media/project/qib/files/sustainability-report/en/qib-sr-2024_en.pdf?rev=dd7e720596404e7c80ab6064c1d026c8'
+          req=urllib.request.Request(url, headers={'User-Agent':'Mozilla/5.0'})
+          with urllib.request.urlopen(req, timeout=120) as r, open('/tmp/qib2024.pdf','wb') as f:
+              f.write(r.read())
+          PY
+          sha256sum /tmp/qib2024.pdf
+          pdftotext -layout /tmp/qib2024.pdf /tmp/qib2024.txt
+      - name: Print workforce evidence windows
+        run: |
+          python - <<'PY'
+          import re
+          text=open('/tmp/qib2024.txt',errors='ignore').read().splitlines()
+          pats=[r'total employees',r'number of employees',r'total workforce',r'workforce',r'headcount',r'full.?time',r'fte',r'qatarization']
+          hits=[]
+          for i,line in enumerate(text):
+              if any(re.search(p,line,re.I) for p in pats):
+                  hits.append(i)
+          seen=set()
+          for i in hits:
+              a=max(0,i-5); b=min(len(text),i+8)
+              key=(a,b)
+              if key in seen: continue
+              seen.add(key)
+              print(f'--- lines {a+1}-{b} ---')
+              print('\n'.join(text[a:b]))
+          PY
