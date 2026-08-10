@@ -2,12 +2,12 @@
   "ai_evidence_firm_years": 66,
   "employment_conflict_firm_years": 0,
   "employment_exact_firm_years": 123,
-  "employment_firm_years_with_numeric_value": 172,
-  "employment_rounded_firm_years": 25,
+  "employment_firm_years_with_numeric_value": 173,
+  "employment_rounded_firm_years": 26,
   "employment_scope_break_firm_years": 24,
-  "employment_unresolved_firm_years": 228,
+  "employment_unresolved_firm_years": 227,
   "firms_with_ai_evidence": 35,
-  "firms_with_any_numeric_employment": 35,
+  "firms_with_any_numeric_employment": 36,
   "firms_with_zero_numeric_employment": [
     "AE_DFM_AJMANBANK",
     "AE_DFM_CBD",
@@ -17,7 +17,6 @@
     "QA_QGTS",
     "QA_UDCD",
     "SA_1080",
-    "SA_1211",
     "SA_3030",
     "SA_3060",
     "SA_5110",
@@ -25,7 +24,7 @@
     "SA_8010",
     "SA_8210"
   ],
-  "numeric_employment_rows_hash_complete": 164,
+  "numeric_employment_rows_hash_complete": 165,
   "numeric_employment_rows_with_hash_pending": 8,
   "partial_firm_coverage": {
     "AE_DFM_AIRARABIA": 5,
@@ -51,6 +50,7 @@
     "SA_1010": 4,
     "SA_1140": 3,
     "SA_1150": 3,
+    "SA_1211": 1,
     "SA_2050": 4,
     "SA_7010": 2,
     "SA_7020": 2
