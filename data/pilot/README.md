@@ -1,64 +1,39 @@
-# Public-source audit seed and 50-firm collection workspace
+# 50-firm collection workspace
 
-This directory contains a **small real-data audit seed plus empty collection templates**, not the final analysis dataset.
+This directory contains the real public-source pilot collection, audit records, templates, and validation inputs for the 50-firm × 2018–2025 study.
 
-## Existing real-data seed
+## Current machine-audited collection
 
-The seed exists to:
+As of 10 August 2026:
 
-1. test provenance and comparability rules against actual corporate disclosures;
-2. surface scope breaks before scaling collection;
-3. test the AI substantiveness rubric on real language;
-4. demonstrate that the pipeline can distinguish rhetoric, planned adoption, operational deployment, and core integration.
+- 400 target firm-years;
+- 124 firm-years with numeric employment evidence across 27 firms;
+- 276 unresolved firm-years;
+- 62 AI-evidence firm-years across 31 firms;
+- 71 unique labeled AI passages;
+- a deterministic blinded second-coder sample of 15 passages;
+- 103 unique source URLs archived and 182 research rows bound to exact source bytes;
+- 113/124 numeric employment observations with archive/hash-complete source bindings.
 
-Files:
+These are collection metrics, not causal results.
 
-- `public_seed_firm_year.csv`: nine auditable workforce observations from public annual-report disclosures.
-- `ai_evidence_seed.csv`: seven manually reviewed AI-evidence records with conservative 0–3 substantiveness scores.
+## Files
 
-These rows remain explicitly non-inferential.
+- `public_seed_firm_year.csv` and `ai_evidence_seed.csv`: original small audit seed.
+- `research_batch_*_employment.csv`: real employment collection batches.
+- `research_batch_*_ai_evidence.csv`: real AI-evidence batches.
+- `research_batch_*_measurement_audit.csv`: scope/comparability decisions.
+- `research_batch_*_labor_cost.csv`: labor-cost evidence where collected.
+- `source_archive_manifest.csv`: exact source-object provenance and hashes.
+- `firm_year_template_50.csv` and `ai_evidence_template_50.csv`: schema templates for additional collection.
+- `sampling_frame_batch01_20.csv`: the earlier 20-firm first-batch planning file; `metadata/firms_50.csv` is the canonical 50-firm frame.
 
-## 50-firm pilot workspace
+## Missingness rule
 
-The 50-firm target is documented in `docs/50_FIRM_PILOT_GATE.md`.
+For headcount and personnel expense, missingness must be explicit (`observed`, `not_disclosed`, `not_applicable`, or `not_collected`). A numeric value is permitted only with `observed`; numeric sentinel values are prohibited.
 
-Collection starts from:
+## Release gate
 
-- `firm_year_template_50.csv`
-- `ai_evidence_template_50.csv`
+Collection-mode checks can pass while the panel remains unfinished. Freeze/release mode additionally requires the full 50-firm × eight-year grid to be attempted, provenance requirements to pass, unresolved conflicts to be classified, and the prespecified second-human AI coding exercise to be completed.
 
-The templates are intentionally empty. A row is added only when the firm/source has actually been reviewed; the repository does not pre-populate invented observations to make the pilot look larger than it is.
-
-### Missingness rule
-
-For headcount and personnel expense, use an explicit status:
-
-- `observed`
-- `not_disclosed`
-- `not_applicable`
-- `not_collected`
-
-A numeric value is allowed only with `observed`. Never use 0, -99, or another numeric sentinel for missing information.
-
-### Validation
-
-`src/mena_ai_labor/pilot50.py` validates the working files during collection and applies stricter release gates when the pilot is ready for review.
-
-Release mode requires:
-
-- exactly 50 unique firms;
-- one attempted row for each year 2018–2025 for every firm;
-- no remaining `not_collected` headcount rows;
-- source URL/page/hash provenance for observed outcomes;
-- source/page/hash provenance for every AI evidence record;
-- manual review for AI evidence scored 2 or 3.
-
-Tests are in `tests/test_pilot50.py` and run under the repository CI test job.
-
-## Non-negotiable cautions from the seed
-
-- A disclosure in a later annual report may restate earlier years. Prefer the most recent comparable series when the reporting scope is explicit.
-- Do not mix `stc Group`, `Saudi Arabian Oil Company`, `Almarai Group GCC employees`, and broader group-workforce headlines without a scope harmonization rule.
-- The Aramco adoption date is **left-censored** because substantive AI language is already present in 2020; do not assign 2020 as the true first-adoption year until earlier reports are coded.
-- stc's 2023–2024 headcount change is automatically flagged for structural-break review because the 2023 report announces a workforce right-sizing plan and the corporate perimeter changed around this period.
-- Seed rows are for pipeline validation and qualitative audit. They are not a convenience sample for causal estimation.
+The source archive and validation workflow fail closed: block pages, false PDFs, conflicting hashes, and ambiguous reporting perimeters are preserved as problems rather than silently converted into usable observations.

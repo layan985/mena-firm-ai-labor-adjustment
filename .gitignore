@@ -5,6 +5,9 @@ data/interim/**
 !data/interim/.gitkeep
 data/processed/**
 !data/processed/.gitkeep
+data/validation/blinded_ai_validation_sample.csv
+data/validation/coder_1.csv
+data/validation/coder_2.csv
 
 # Generated research outputs
 outputs/**
@@ -21,6 +24,7 @@ paper/*.pdf
 __pycache__/
 .pytest_cache/
 *.pyc
+*.egg-info/
 
 # R
 .Rhistory

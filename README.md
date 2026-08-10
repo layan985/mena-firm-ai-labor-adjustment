@@ -2,80 +2,86 @@
 
 Annual reports often say a company is “using AI” long before they identify an operational deployment. The same reports can switch between group employees, domestic employees, contractors, and employee-benefit populations without making the change obvious. Those measurement problems have to be resolved before an event-study coefficient means anything.
 
-This repository is my attempt to build a firm-year panel that keeps the AI evidence, employment definition, source page, and reporting perimeter visible.
+This repository builds a 50-firm × 2018–2025 panel while keeping AI evidence, employment definitions, source documents, reporting perimeter, and corrections auditable.
 
 ## Current status
 
-As of 10 August 2026, this is a data-collection project, not a completed empirical paper.
+As of 10 August 2026, the 50-firm frame and validation machinery are built and real collection is underway. The panel is **not yet frozen for causal estimation**.
 
 | Item | Current state |
 | --- | --- |
-| Sampling frame | 20 named firms reviewed for the first collection batch |
-| Employment seed | 9 firm-year observations across Aramco, stc, and Almarai |
-| AI evidence seed | 7 manually reviewed excerpts |
-| 50-firm panel | Not complete; collection templates are still empty |
-| Causal estimates | None |
-| Human intercoder validation | Not started |
-| Frozen analysis plan | Not yet frozen |
+| Target frame | 50 firms × 2018–2025 = 400 firm-years |
+| Numeric employment evidence | 124/400 firm-years |
+| Firms with numeric employment | 27/50 |
+| Employment observations with archived SHA-256 source bindings | 113/124 |
+| AI evidence coverage | 62 firm-years across 31/50 firms |
+| Unique labeled AI passages | 71 |
+| Blinded second-coder sample | 15 passages (21.1%) drawn and frozen |
+| Unresolved firm-years | 276 |
+| Preferred causal estimates | Not inspected |
+| Independent second-human coding | Pending |
 
-The public seed exists to find coding problems before collection scales. It is too small and too selected for inference.
+The collection branch also archives 103 unique source objects and binds 182 research rows to exact source bytes. Eleven numeric employment observations remain behind issuer access failures and are explicitly documented rather than treated as verified archive-complete observations.
 
-## Question
+## Research question
 
-The main question is whether firms with greater pre-2022 exposure to generative AI changed employment differently after 30 November 2022. A secondary, more descriptive question is what happened around a firm's first documented operational AI deployment.
+The stronger design asks whether firms with greater **pre-2022 exposure** to generative-AI-susceptible tasks changed employment differently after 30 November 2022. A separate adoption event study describes what happens around a firm's first documented operational AI deployment.
 
-These are not the same design. Adoption timing is chosen by the firm and may respond to the same shocks that affect employment.
+These are not the same estimand. Adoption timing is chosen by the firm and may respond to demand, restructuring, management quality, labor costs, or other shocks.
 
-## Decisions from the first three firms
+## Measurement decisions already resolved
 
-- **Aramco:** substantive AI language is already present in 2020. The adoption date is left-censored, so 2020 is not coded as the first adoption year.
-- **stc:** reported group headcount falls from 22,751 in 2023 to 19,863 in 2024, while the 2023 report also announces workforce right-sizing. The change is flagged until the corporate perimeter and reporting definition are reconciled.
-- **Almarai:** a “50,000+ workforce” headline is not treated as interchangeable with the 46,997 GCC employee population used in the employee-benefit disclosure. Its 2024 discussion of future AI deployment is coded as planning, not treatment.
+- **Aramco:** substantive AI language is visible by 2020, so the adoption date is left-censored rather than mechanically assigned to 2020.
+- **stc:** the 2023–2024 headcount decline is flagged because a workforce right-sizing plan and possible reporting-perimeter changes overlap the change.
+- **Almarai:** a broad “50,000+ workforce” headline is not spliced into the narrower GCC employee-benefit population; 2024 forward-looking AI language is planning, not treatment.
+- **Banque Saudi Fransi:** lower Bank-entity figures are kept separate from the comparable Group series; the 2023 one-person retrospective restatement is preserved rather than silently overwritten.
+- **QNB:** ESG workforce figures with a different reporting perimeter are stored separately from rounded global workforce disclosures.
 
-The full record of these choices is in [docs/PILOT_AUDIT_LOG.md](docs/PILOT_AUDIT_LOG.md). Dated notes explain the reasoning in less formal language:
+The detailed record is in the audit logs, measurement files, and dated notes under `docs/`, `data/pilot/`, and `notes/`.
 
-- [notes/2026-08-10-employment-conflict.md](notes/2026-08-10-employment-conflict.md)
-- [notes/2026-08-10-first-ai-labeling-problem.md](notes/2026-08-10-first-ai-labeling-problem.md)
-- [notes/2026-08-10-identification-question.md](notes/2026-08-10-identification-question.md)
+## Identification
 
-## Identification choice
-
-The stronger design uses exposure measured before the public release of ChatGPT:
+The main exposure design is:
 
 \[
 Y_{it}=\alpha_i+\lambda_{ct}+\sum_{k\ne -1}\beta_k
 \left(Exposure_i\times 1[t-T_0=k]\right)+\varepsilon_{it}.
 \]
 
-Firm adoption will be shown in event time only after the disclosure is manually checked. I do not interpret that graph as causal merely because it uses a modern staggered-DiD estimator. [docs/IDENTIFICATION.md](docs/IDENTIFICATION.md) records the distinction and the main threats to validity.
+Firm adoption will be shown in event time only after disclosure coding is frozen. Modern staggered-DiD estimators address treatment-effect heterogeneity; they do not make voluntary adoption timing exogenous.
 
-## Data files
+## Data and validation artifacts
 
-- [data/pilot/public_seed_firm_year.csv](data/pilot/public_seed_firm_year.csv): nine employment observations used to test definitions and flags.
-- [data/pilot/ai_evidence_seed.csv](data/pilot/ai_evidence_seed.csv): seven manually reviewed excerpts scored from rhetoric to operational integration.
-- [data/pilot/sampling_frame_batch01_20.csv](data/pilot/sampling_frame_batch01_20.csv): first 20 firms selected for document collection.
-- [data/pilot/README.md](data/pilot/README.md): missingness rules and requirements for the 50-firm pilot.
+The repository now includes:
 
-Licensed or registration-gated source files are not committed.
+- `metadata/firms_50.csv`: the canonical pre-outcome 50-firm frame;
+- `data/pilot/research_batch_*`: auditable employment, AI-evidence, labor-cost, and measurement-audit batches;
+- `data/pilot/source_archive_manifest.csv`: exact source-object bindings and SHA-256 provenance;
+- `docs/PILOT_50_COLLECTION_PROTOCOL.md`: collection rules;
+- `docs/AI_CODING_CODEBOOK_V0_2.md`: 0–3 AI substantiveness rubric;
+- `scripts/build_pilot_coverage.py`: machine-audited coverage report;
+- `scripts/archive_pilot_sources.py`: content-addressed source archival;
+- `scripts/build_ai_validation_input.py` and `scripts/draw_blinded_validation_sample.py`: blinded validation workflow;
+- `scripts/score_intercoder_agreement.py`: prespecified agreement calculation;
+- `scripts/freeze_pilot_50.py`: fail-closed freeze gate;
+- `src/mena_ai_labor/pilot50.py`: collection/release schema validation.
+
+Licensed or registration-gated source files are not redistributed when terms do not permit it.
 
 ## Run the checks
 
 ```bash
 python -m pip install -e ".[dev]"
 pytest
-python scripts/validate_public_seed.py
+python scripts/build_pilot_coverage.py
+python scripts/validate_source_manifest.py
+python scripts/report_pilot_conflicts.py
 ```
 
-The R scripts under [analysis/](analysis/) are placeholders for the eventual descriptive and event-study work. Their existence is not evidence that the corresponding estimates have been run on a completed panel.
+The branch audit reported 33/33 Python tests passing plus a full source-byte re-hash and conflict audit.
 
-## Results and next work
+## Freeze rule
 
-[RESULTS.md](RESULTS.md) distinguishes pilot findings from untested hypotheses.
+The project does not release a preferred causal coefficient until the 50 × 2018–2025 frame has an attempted headcount status for every firm-year, provenance failures are resolved or explicitly classified, the AI search is complete, and the blinded second-human coding exercise has been completed and scored.
 
-The next work is narrow:
-
-1. collect the remaining documents for the first 20 firms;
-2. reconcile employment definitions before adding more years;
-3. label a blinded AI excerpt sample with a second human coder before freezing treatment rules.
-
-No preferred causal estimate will be selected before those steps are complete.
+Missing evidence is never replaced with zero, a guessed adoption date, or an AI-generated second-coder label.
