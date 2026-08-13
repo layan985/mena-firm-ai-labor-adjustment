@@ -6,28 +6,28 @@ This repository builds a 50-firm × 2018–2025 panel while keeping AI evidence,
 
 ## Current status
 
-**v0.2.0a2 is the audited collection/provenance alpha.** The 50-firm frame, validation/freeze machinery, blinded coding workflow, OECD/GDELT extension, and incremental immutable source-binding workflow are integrated on `main` and CI-tested. The empirical panel is **not yet frozen for causal estimation** because real collection and an independent second-human coding gate remain unfinished.
+**v0.2.0a2 is the audited collection/provenance alpha.** The 50-firm frame, validation/freeze machinery, blinded coding workflow, OECD/GDELT extension, and incremental immutable source-binding workflow are integrated on `main`. The empirical panel is **not yet frozen for causal estimation** because collection and an independent second-human coding gate remain unfinished.
 
-As of 10 August 2026:
+As of 13 August 2026, from `data/interim/pilot_50_coverage_summary.json` and the committed validation files:
 
 | Item | Current state |
 | --- | --- |
 | Target frame | 50 firms × 2018–2025 = 400 firm-years |
-| Numeric employment evidence | 148/400 firm-years |
-| Firms with numeric employment | 31/50 |
-| Exact numeric employment observations | 114 |
-| Rounded numeric employment observations | 17 |
-| Numeric observations carrying a scope/comparability warning | 17 |
-| Employment observations with SHA-256 source bindings | 140/148 |
+| Numeric employment evidence | 176/400 firm-years |
+| Firms with numeric employment | 38/50 |
+| Exact numeric employment observations | 126 |
+| Rounded numeric employment observations | 26 |
+| Numeric observations carrying a scope/comparability warning | 24 |
+| Employment observations with SHA-256 source bindings | 168/176 |
 | Employment conflicts | 0 |
-| AI evidence coverage | 62 firm-years across 31/50 firms |
-| Unique labeled AI passages | 71 |
-| Blinded second-coder sample | 15 passages (21.1%) drawn and frozen |
-| Unresolved firm-years | 252 |
+| AI evidence coverage | 66 firm-years across 35/50 firms |
+| Unique labeled AI passages | 75 |
+| Blinded second-coder sample | 16 passages (21.3%) drawn and frozen |
+| Unresolved firm-years | 224 |
 | Preferred causal estimates | Not inspected |
 | Independent second-human coding | Pending |
 
-The collection pass behind v0.2.0a2 added 24 numeric firm-years without weakening the evidence rule. Newly recovered primary-source series include Almarai 2020, Air Arabia 2024–2025, Qatar Islamic Bank 2019–2024, Dubai Financial Market 2024–2025, Tabreed 2021–2025, and a complete Milaha 2018–2025 series. Where issuers publish rounded totals or change workforce terminology, those limitations stay explicit in the row metadata.
+The current collection contains primary-source series for firms including Almarai, Air Arabia, Qatar Islamic Bank, Dubai Financial Market, Tabreed, and Milaha. Where issuers publish rounded totals or change workforce terminology, those limitations stay explicit in the row metadata.
 
 Eight numeric employment rows remain hash-pending. Issuer access failures and missing disclosures remain unresolved rather than being replaced with secondary estimates.
 
@@ -113,8 +113,12 @@ python scripts/report_pilot_conflicts.py
 
 The repository CI covers Python tests/pipeline checks, the 50-firm coverage/source audits, R syntax validation and the LaTeX paper build. Employment-source collection additionally runs the incremental immutable binder before refreshing the committed coverage summary.
 
+An outside researcher can use [`audits/README.md`](audits/README.md) as a clean-room handoff. The Lab does not use the label **independently reproduced** until a non-author publishes a completed report and discrepancy log.
+
 ## Freeze rule
 
 The engineering/data alpha can be released while the empirical study remains gated. A preferred causal coefficient is not released until the 50 × 2018–2025 frame has an attempted headcount status for every firm-year, provenance failures are resolved or explicitly classified, the AI search is complete, and the blinded second-human coding exercise has been completed and scored.
 
 Missing evidence is never replaced with zero, a guessed adoption date, a commercial headcount estimate, or an AI-generated second-coder label.
+
+The fixed flagship release contract is in [`docs/FLAGSHIP_RELEASE_GATE.md`](docs/FLAGSHIP_RELEASE_GATE.md). No expansion beyond the 50-firm frame is in scope before that gate closes and a citable release is archived.
